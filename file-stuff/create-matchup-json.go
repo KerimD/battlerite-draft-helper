@@ -12,6 +12,7 @@ import (
 
 var ChampionsCsvFilename = "champions.csv"
 var MatchupsCsvFilename = "matchups.csv"
+var SynergiesCsvFilename = "synergies.csv"
 var MatchupsJsonFilename = "matchups.json"
 
 type Champion struct {
@@ -28,29 +29,32 @@ func main() {
 	start := time.Now()
 
 	champions := getChampionsFromCsv()
-	names := createNamesSlice(champions)
 
-	//createMatchupsCsv(champions, names)
-	//createMatchupsJson(champions, names)
+	//createMatchupsCsv(champions, "")
+	//createMatchupsJson(champions)
 
 	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
-func createMatchupsCsv(champions []Champion, names []string) {
+func createMatchupsCsv(champions []Champion, filename string) {
 	matchups := make([][]string, 0, (len(champions)*(len(champions)-1))/2)
 	matchups = append(matchups, []string{"name", "opposition", "evaluation"})
 
-	for i, name := range names {
-		for _, opposition := range names[i+1:] {
-			matchups = append(matchups, []string{name, opposition, "3"})
+	for i, champion := range champions {
+		for _, opposition := range champions[i+1:] {
+			evaluation := "3"
+			if filename == SynergiesCsvFilename && champion.Role == "Melee" && champion.Role == opposition.Role {
+				evaluation = "2"
+			}
+			matchups = append(matchups, []string{champion.Name, opposition.Name, evaluation})
 		}
 	}
 
-	saveMatchupsToCsvFile(matchups)
+	saveMatchupsToCsvFile(matchups, filename)
 }
 
-func saveMatchupsToCsvFile(matchups [][]string) {
-	f, err := os.OpenFile(MatchupsCsvFilename, os.O_WRONLY, 0644)
+func saveMatchupsToCsvFile(matchups [][]string, filename string) {
+	f, err := os.OpenFile(filename, os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,13 +71,13 @@ func saveMatchupsToCsvFile(matchups [][]string) {
 	}
 }
 
-func createMatchupsJson(champions []Champion, names []string) {
+func createMatchupsJson(champions []Champion) {
 	matchups := make(map[string]EvaluatedChampion)
 
 	for _, champion := range champions {
 		matchups[champion.Name] = EvaluatedChampion{
 			Role:     champion.Role,
-			Matchups: evaluateChampionMatchups(names, champion),
+			Matchups: evaluateChampionMatchups(champions, champion),
 		}
 	}
 
@@ -112,24 +116,14 @@ func getChampionsFromCsv() []Champion {
 	return champions
 }
 
-func createNamesSlice(champions []Champion) []string {
-	names := make([]string, 0, len(champions))
-
-	for _, champion := range champions {
-		names = append(names, champion.Name)
-	}
-
-	return names
-}
-
-func evaluateChampionMatchups(names []string, champion Champion) map[string]int {
+func evaluateChampionMatchups(champions []Champion, yourChampion Champion) map[string]int {
 	championMatchups := make(map[string]int)
 
-	for _, name := range names {
-		if name == champion.Name {
-			championMatchups[name] = 0
+	for _, champion := range champions {
+		if champion.Name == yourChampion.Name {
+			championMatchups[champion.Name] = 0
 		} else {
-			championMatchups[name] = rand.Intn(11) - 5
+			championMatchups[champion.Name] = rand.Intn(11) - 5
 		}
 	}
 
