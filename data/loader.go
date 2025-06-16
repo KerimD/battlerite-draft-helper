@@ -18,7 +18,6 @@ var (
 	MatchupsCsvFilename           = "matchups.csv"
 	SynergiesCsvFilename          = "synergies.csv"
 	MatchupsJsonFilename          = "matchups.json"
-	CompletedStatesFilename       = "completed-states.json"
 )
 
 type Champion struct {
