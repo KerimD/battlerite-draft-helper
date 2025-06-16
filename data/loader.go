@@ -1,4 +1,4 @@
-package main
+package data
 
 import (
 	"encoding/csv"
@@ -12,25 +12,22 @@ import (
 	"time"
 )
 
-var ChampionsCsvFilename = "champions.csv"
-var MatchupsCsvFilename = "matchups.csv"
-var SynergiesCsvFilename = "synergies.csv"
-var MatchupsJsonFilename = "matchups.json"
+var (
+	ChampionsCsvFilename = "champions.csv"
+	MatchupsCsvFilename  = "matchups.csv"
+	SynergiesCsvFilename = "synergies.csv"
+	MatchupsJsonFilename = "matchups.json"
+)
 
 type Champion struct {
 	Name string
 	Role string
 }
 
-type EvaluatedChampion struct {
-	Role     string
-	Matchups map[string]int
-}
-
 func main() {
 	start := time.Now()
 
-	//champions := getChampionsFromCsv()
+	//champions := GetChampionsFromCsv()
 
 	//createMatchupsCsv(champions, "")
 	//createMatchupsJson(champions)
@@ -39,7 +36,7 @@ func main() {
 	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
-func getChampionsFromCsv() []Champion {
+func GetChampionsFromCsv() []Champion {
 	data := getCsvData(ChampionsCsvFilename)
 
 	var champions []Champion

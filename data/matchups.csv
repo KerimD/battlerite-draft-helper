@@ -52,7 +52,7 @@ Croak,Poloma,3
 Croak,Sirius,3
 Croak,Ulric,1
 Croak,Zander,3
-Freya,Jamila,4
+Freya,Jamila,2
 Freya,Raigon,5
 Freya,Rook,4
 Freya,Ruh Kaan,4
@@ -105,7 +105,7 @@ Raigon,Rook,4
 Raigon,Ruh Kaan,3
 Raigon,Shifu,2
 Raigon,Thorn,4
-Raigon,Alysia,3
+Raigon,Alysia,4
 Raigon,Ashka,3
 Raigon,Destiny,1
 Raigon,Ezmo,2
@@ -187,8 +187,8 @@ Shifu,Poloma,3
 Shifu,Sirius,3
 Shifu,Ulric,2
 Shifu,Zander,4
-Thorn,Alysia,1
-Thorn,Ashka,1
+Thorn,Alysia,2
+Thorn,Ashka,2
 Thorn,Destiny,2
 Thorn,Ezmo,3
 Thorn,Iva,2
@@ -216,7 +216,7 @@ Alysia,Shen Rao,2
 Alysia,Taya,3
 Alysia,Varesh,4
 Alysia,Blossom,2
-Alysia,Lucie,4
+Alysia,Lucie,2
 Alysia,Oldur,4
 Alysia,Pearl,3
 Alysia,Pestilus,5
@@ -242,7 +242,7 @@ Ashka,Sirius,3
 Ashka,Ulric,3
 Ashka,Zander,2
 Destiny,Ezmo,3
-Destiny,Iva,3
+Destiny,Iva,4
 Destiny,Jade,3
 Destiny,Jumong,2
 Destiny,Shen Rao,2
@@ -273,7 +273,7 @@ Ezmo,Sirius,4
 Ezmo,Ulric,3
 Ezmo,Zander,4
 Iva,Jade,3
-Iva,Jumong,4
+Iva,Jumong,3
 Iva,Shen Rao,3
 Iva,Taya,3
 Iva,Varesh,3
