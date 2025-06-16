@@ -13,10 +13,12 @@ import (
 )
 
 var (
-	ChampionsCsvFilename = "champions.csv"
-	MatchupsCsvFilename  = "matchups.csv"
-	SynergiesCsvFilename = "synergies.csv"
-	MatchupsJsonFilename = "matchups.json"
+	ChampionsCsvFilename          = "champions.csv"
+	ChampionsShortListCsvFilename = "champions-short-list.csv"
+	MatchupsCsvFilename           = "matchups.csv"
+	SynergiesCsvFilename          = "synergies.csv"
+	MatchupsJsonFilename          = "matchups.json"
+	CompletedStatesFilename       = "completed-states.json"
 )
 
 type Champion struct {
@@ -27,7 +29,7 @@ type Champion struct {
 func main() {
 	start := time.Now()
 
-	//champions := GetChampionsFromCsv()
+	//champions := GetChampionsFromCsv(ChampionsCsvFilename)
 
 	//createMatchupsCsv(champions, "")
 	//createMatchupsJson(champions)
@@ -36,8 +38,8 @@ func main() {
 	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
-func GetChampionsFromCsv() []Champion {
-	data := getCsvData(ChampionsCsvFilename)
+func GetChampionsFromCsv(filename string) []Champion {
+	data := getCsvData(filename)
 
 	var champions []Champion
 	for i, row := range data {
@@ -101,7 +103,7 @@ func migrateMatchupsCsvToJson() {
 	}
 
 	sortedMatchups := sortMatchups(matchups)
-	saveDataToJsonFile(sortedMatchups)
+	SaveDataToJsonFile(sortedMatchups, MatchupsJsonFilename)
 }
 
 func populateMatchups(row []string, matchups map[string]map[string]int) {
@@ -156,8 +158,8 @@ func sortMatchups(matchups map[string]map[string]int) map[string]json.RawMessage
 	return result
 }
 
-func saveDataToJsonFile(data any) {
-	f, err := os.Create(MatchupsJsonFilename)
+func SaveDataToJsonFile(data any, filename string) {
+	f, err := os.Create(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
