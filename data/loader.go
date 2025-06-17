@@ -23,6 +23,7 @@ var (
 type Champion struct {
 	Name string
 	Role string
+	ID   string
 }
 
 func main() {
@@ -49,6 +50,7 @@ func GetChampionsFromCsv(filename string) []Champion {
 		champions = append(champions, Champion{
 			Name: row[0],
 			Role: row[1],
+			ID:   row[2],
 		})
 	}
 

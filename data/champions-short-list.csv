@@ -1,8 +1,8 @@
-name,role
-Bakko,Melee
-Shifu,Melee
-Ashka,Ranged
-Jade,Ranged
-Pearl,Support
-Pestilus,Support
-Ulric,Support
+name,role,id
+Bakko,Melee,0
+Shifu,Melee,1
+Ashka,Ranged,2
+Jade,Ranged,3
+Pearl,Support,4
+Pestilus,Support,5
+Ulric,Support,6
