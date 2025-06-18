@@ -2,6 +2,7 @@ package c
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -46,6 +47,28 @@ func TeamSelectableChampionsConstructor() TeamSelectableChampions {
 		PickableSupportChampions: make(map[string]bool),
 		BannableSupportChampions: make(map[string]bool),
 	}
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	fmt.Printf("Alloc = %d KB", bToMb(m.Alloc))
+	fmt.Printf(", TotalAlloc = %d KB", bToMb(m.TotalAlloc))
+	fmt.Printf(", Sys = %d KB", bToMb(m.Sys))
+	fmt.Printf(", NumGC = %v\n", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
+}
+
+func bToKb(b uint64) uint64 {
+	return b / 1024
+}
+
+func kbToMb(kb uint64) uint64 {
+	return kb / 1024
 }
 
 func FormatCompletedStates(states []string, idToChampion map[string]Champion) {

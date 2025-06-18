@@ -9,31 +9,35 @@ import (
 
 const DataDir = "data/"
 
+var (
+	NumChampions     = 0
+	ChampionNameToId = make(map[string]string)
+	IdToChampion     = make(map[string]c.Champion)
+)
+
+// Note: Currently does not support global bans after picks.
 func main() {
-	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
-	ChampionToID, IdToChampion := initializeChampionMaps(champions)
+	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
+	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
+	initializeChampionMaps(champions)
 
 	championSet := make(map[string]c.Champion, len(champions))
 	for _, champion := range champions {
 		championSet[champion.Id] = champion
 	}
 
-	vroomVroom(championSet, ChampionToID, IdToChampion)
+	vroomVroom(championSet)
 }
 
-func initializeChampionMaps(champions []c.Champion) (map[string]string, map[string]c.Champion) {
-	ChampionNameToId := make(map[string]string, len(champions))
-	IdToChampion := make(map[string]c.Champion, len(champions))
-
+func initializeChampionMaps(champions []c.Champion) {
+	NumChampions = len(champions)
 	for _, champion := range champions {
 		ChampionNameToId[champion.Name] = champion.Id
 		IdToChampion[champion.Id] = champion
 	}
-
-	return ChampionNameToId, IdToChampion
 }
 
-func vroomVroom(champions map[string]c.Champion, ChampionNameToId map[string]string, IdToChampion map[string]c.Champion) {
+func vroomVroom(championSet map[string]c.Champion) {
 	node := c.ScoredTrieNode{
 		ChampionName:      "",
 		AverageEvaluation: 0,
@@ -42,34 +46,8 @@ func vroomVroom(champions map[string]c.Champion, ChampionNameToId map[string]str
 	}
 
 	evaluationSum := 0
-	for championId, champion := range champions {
-		t1SelectableChampions := c.CreateTeamSelectableChampions(champions)
-		t2SelectableChampions := c.CreateTeamSelectableChampions(champions)
-
-		numT1Picks, numT2Picks := updateSelectableChampionsInPlace(
-			championId,
-			0,
-			0,
-			0,
-			t1SelectableChampions,
-			t2SelectableChampions,
-		)
-
-		// kick off a process for each champion getting first chosen
-		evaluation, completedStates := process(
-			len(champions),
-			ChampionNameToId,
-			IdToChampion,
-			"",
-			championId,
-			0,
-			numT1Picks,
-			numT2Picks,
-			false,
-			false,
-			t1SelectableChampions,
-			t2SelectableChampions,
-		)
+	for championId, champion := range championSet {
+		evaluation, completedStates := kickOffDraft(championSet, championId)
 		fmt.Println("Processed: ", champion, " with evaluation: ", evaluation, " and num completed states: ", len(completedStates))
 
 		evaluationSum += evaluation
@@ -81,13 +59,36 @@ func vroomVroom(champions map[string]c.Champion, ChampionNameToId map[string]str
 		//break
 	}
 
-	node.AverageEvaluation = evaluationSum / len(champions)
+	node.AverageEvaluation = evaluationSum / len(championSet)
+}
+
+func kickOffDraft(championSet map[string]c.Champion, chosenChampionId string) (int, []string) {
+	t1SelectableChampions := c.CreateTeamSelectableChampions(championSet)
+	t2SelectableChampions := c.CreateTeamSelectableChampions(championSet)
+
+	numT1Picks, numT2Picks := updateSelectableChampionsInPlace(
+		chosenChampionId,
+		0,
+		0,
+		0,
+		t1SelectableChampions,
+		t2SelectableChampions,
+	)
+
+	return process(
+		"",
+		chosenChampionId,
+		0,
+		numT1Picks,
+		numT2Picks,
+		false,
+		false,
+		t1SelectableChampions,
+		t2SelectableChampions,
+	)
 }
 
 func process(
-	numChampions int,
-	championNameToId map[string]string,
-	idToChampion map[string]c.Champion,
 	previousState string,
 	chosenChampionId string,
 	draftStepIdx int,
@@ -108,7 +109,7 @@ func process(
 	}
 
 	node := c.ScoredTrieNode{
-		ChampionName:      idToChampion[chosenChampionId].Name,
+		ChampionName:      IdToChampion[chosenChampionId].Name,
 		AverageEvaluation: 0,
 		CompletedStates:   []string{},
 		Children:          make(map[string]*c.ScoredTrieNode),
@@ -142,16 +143,13 @@ func process(
 		}
 
 		evaluation, completedStates := process(
-			numChampions,
-			championNameToId,
-			idToChampion,
 			currentState,
 			championId,
 			draftStepIdx+1,
 			numT1Picks,
 			numT2Picks,
-			t1HasSupport || (c.DraftOrder[draftStepIdx+1] == "T1P" && idToChampion[championId].Role == c.SupportRole),
-			t2HasSupport || (c.DraftOrder[draftStepIdx+1] == "T2P" && idToChampion[championId].Role == c.SupportRole),
+			t1HasSupport || (c.DraftOrder[draftStepIdx+1] == "T1P" && IdToChampion[championId].Role == c.SupportRole),
+			t2HasSupport || (c.DraftOrder[draftStepIdx+1] == "T2P" && IdToChampion[championId].Role == c.SupportRole),
 			deepCopyT1SelectableChampions,
 			deepCopyT2SelectableChampions,
 		)
@@ -159,13 +157,13 @@ func process(
 		evaluationSum += evaluation
 		node.CompletedStates = append(node.CompletedStates, completedStates...)
 
-		if draftStepIdx < 3 {
-			fmt.Println(currentState, " -> ", idToChampion[championId], "num completed states: ", len(completedStates))
+		if draftStepIdx < 6 {
+			fmt.Println(currentState, " -> ", IdToChampion[championId], "num completed states: ", len(completedStates))
+			c.PrintMemUsage()
 		}
-		//break
 	}
 
-	node.AverageEvaluation = evaluationSum / numChampions
+	node.AverageEvaluation = evaluationSum / NumChampions
 	return node.AverageEvaluation, node.CompletedStates
 }
 
@@ -208,7 +206,6 @@ func getSelectableChampions(
 	}
 }
 
-// Note: Currently does not support global bans after picks.
 func updateSelectableChampionsInPlace(
 	championId string,
 	currDraftStepIdx int,
