@@ -1,6 +1,7 @@
 package data
 
 import (
+	"battlerite-draft-helper/c"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -20,12 +21,6 @@ var (
 	MatchupsJsonFilename          = "matchups.json"
 )
 
-type Champion struct {
-	Name string
-	Role string
-	Id   string
-}
-
 func main() {
 	start := time.Now()
 
@@ -38,18 +33,18 @@ func main() {
 	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
-func GetChampionsFromCsv(filename string) []Champion {
+func GetChampionsFromCsv(filename string) []c.Champion {
 	data := getCsvData(filename)
 
-	var champions []Champion
+	var champions []c.Champion
 	for i, row := range data {
 		if i == 0 {
 			continue
 		}
 
-		champions = append(champions, Champion{
+		champions = append(champions, c.Champion{
 			Name: row[0],
-			Role: row[1],
+			Role: c.Role(row[1]),
 			Id:   row[2],
 		})
 	}
@@ -57,7 +52,7 @@ func GetChampionsFromCsv(filename string) []Champion {
 	return champions
 }
 
-func createMatchupsCsv(champions []Champion, filename string) {
+func createMatchupsCsv(champions []c.Champion, filename string) {
 	matchups := make([][]string, 0, (len(champions)*(len(champions)-1))/2)
 	matchups = append(matchups, []string{"name", "opposition", "evaluation"})
 
