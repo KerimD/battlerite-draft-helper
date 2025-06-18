@@ -1,4 +1,4 @@
-package data
+package main
 
 import (
 	"battlerite-draft-helper/c"
@@ -58,9 +58,9 @@ func createMatchupsCsv(champions []c.Champion, filename string) {
 
 	for i, champion := range champions {
 		for _, opposition := range champions[i+1:] {
-			evaluation := "3"
+			evaluation := "0"
 			if filename == SynergiesCsvFilename && champion.Role == "Melee" && champion.Role == opposition.Role {
-				evaluation = "2"
+				evaluation = "-1"
 			}
 			matchups = append(matchups, []string{champion.Name, opposition.Name, evaluation})
 		}
@@ -111,14 +111,14 @@ func populateMatchups(row []string, matchups map[string]map[string]int) {
 	}
 
 	populateMatchup(matchups, name, opposition, evaluation)
-	populateMatchup(matchups, opposition, name, 6-evaluation)
+	populateMatchup(matchups, opposition, name, -1*evaluation)
 }
 
 func populateMatchup(matchups map[string]map[string]int, name string, opposition string, evaluation int) {
 	_, exists := matchups[name]
 	if !exists {
 		matchups[name] = make(map[string]int)
-		matchups[name][name] = 3
+		matchups[name][name] = 0
 	}
 	matchups[name][opposition] = evaluation
 }
