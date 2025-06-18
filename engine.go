@@ -76,9 +76,9 @@ func vroomVroom(champions map[string]c.Champion, ChampionNameToId map[string]str
 		node.CompletedStates = append(node.CompletedStates, completedStates...)
 
 		//c.FormatCompletedStates(node.CompletedStates[533116:533119], IdToChampion)
-		c.FormatCompletedStates(node.CompletedStates, IdToChampion)
-		fmt.Println(node.CompletedStates)
-		break
+		//c.FormatCompletedStates(node.CompletedStates, IdToChampion)
+		//fmt.Println(node.CompletedStates)
+		//break
 	}
 
 	node.AverageEvaluation = evaluationSum / len(champions)
@@ -86,8 +86,8 @@ func vroomVroom(champions map[string]c.Champion, ChampionNameToId map[string]str
 
 func process(
 	numChampions int,
-	ChampionNameToId map[string]string,
-	IdToChampion map[string]c.Champion,
+	championNameToId map[string]string,
+	idToChampion map[string]c.Champion,
 	previousState string,
 	chosenChampionId string,
 	draftStepIdx int,
@@ -99,9 +99,6 @@ func process(
 	t2SelectableChampions c.TeamSelectableChampions,
 ) (int, []string) {
 	currentState := previousState + chosenChampionId
-	if draftStepIdx < len(c.DraftOrder) {
-		fmt.Println("\nProcessing Draft Step", c.DraftOrder[draftStepIdx], ":", IdToChampion[chosenChampionId].Name)
-	}
 
 	// Base case
 	if draftStepIdx >= len(c.DraftOrder)-1 {
@@ -111,7 +108,7 @@ func process(
 	}
 
 	node := c.ScoredTrieNode{
-		ChampionName:      IdToChampion[chosenChampionId].Name,
+		ChampionName:      idToChampion[chosenChampionId].Name,
 		AverageEvaluation: 0,
 		CompletedStates:   []string{},
 		Children:          make(map[string]*c.ScoredTrieNode),
@@ -126,7 +123,6 @@ func process(
 		t1SelectableChampions,
 		t2SelectableChampions,
 	)
-	fmt.Println("Selectable Champions:", selectableChampions)
 
 	evaluationSum := 0
 	for championId := range selectableChampions {
@@ -147,22 +143,26 @@ func process(
 
 		evaluation, completedStates := process(
 			numChampions,
-			ChampionNameToId,
-			IdToChampion,
+			championNameToId,
+			idToChampion,
 			currentState,
 			championId,
 			draftStepIdx+1,
 			numT1Picks,
 			numT2Picks,
-			t1HasSupport || (c.DraftOrder[draftStepIdx+1] == "T1P" && IdToChampion[championId].Role == c.SupportRole),
-			t2HasSupport || (c.DraftOrder[draftStepIdx+1] == "T2P" && IdToChampion[championId].Role == c.SupportRole),
+			t1HasSupport || (c.DraftOrder[draftStepIdx+1] == "T1P" && idToChampion[championId].Role == c.SupportRole),
+			t2HasSupport || (c.DraftOrder[draftStepIdx+1] == "T2P" && idToChampion[championId].Role == c.SupportRole),
 			deepCopyT1SelectableChampions,
 			deepCopyT2SelectableChampions,
 		)
 
 		evaluationSum += evaluation
 		node.CompletedStates = append(node.CompletedStates, completedStates...)
-		break
+
+		if draftStepIdx < 3 {
+			fmt.Println(currentState, " -> ", idToChampion[championId], "num completed states: ", len(completedStates))
+		}
+		//break
 	}
 
 	node.AverageEvaluation = evaluationSum / numChampions
@@ -180,9 +180,6 @@ func getSelectableChampions(
 ) map[string]bool {
 	t1NeedsSupportThisStep := !t1HasSupport && numT1Picks >= 2
 	t2NeedsSupportThisStep := !t2HasSupport && numT2Picks >= 2
-	fmt.Println("getSelectableChampions()")
-	fmt.Println("t1HasSupport", t1HasSupport, "t2HasSupport", t2HasSupport, "numT1Picks:", numT1Picks, "numT2Picks:", numT2Picks)
-	fmt.Println("Draft Step:", c.DraftOrder[draftStepIdx], "t1NeedsSupport:", t1NeedsSupportThisStep, "t2NeedsSupport:", t2NeedsSupportThisStep)
 
 	switch c.DraftOrder[draftStepIdx] {
 	case "T1P":
@@ -220,8 +217,6 @@ func updateSelectableChampionsInPlace(
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
 ) (int, int) {
-	fmt.Println("updateSelectableChampionsInPlace()")
-	fmt.Println("Draft Step:", c.DraftOrder[currDraftStepIdx], "championId:", championId, "numT1Picks:", numT1Picks, "numT2Picks:", numT2Picks)
 	switch c.DraftOrder[currDraftStepIdx] {
 	case "T1GB":
 		delete(t1SelectableChampions.PickableChampions, championId)
@@ -234,16 +229,12 @@ func updateSelectableChampionsInPlace(
 		delete(t2SelectableChampions.PickableChampions, championId)
 		delete(t1SelectableChampions.BannableSupportChampions, championId)
 		delete(t2SelectableChampions.PickableSupportChampions, championId)
-		fmt.Println(t1SelectableChampions)
-		fmt.Println(t2SelectableChampions)
 		return numT1Picks, numT2Picks
 	case "T1P":
 		delete(t1SelectableChampions.PickableChampions, championId)
 		delete(t2SelectableChampions.BannableChampions, championId)
 		delete(t1SelectableChampions.PickableSupportChampions, championId)
 		delete(t2SelectableChampions.BannableSupportChampions, championId)
-		fmt.Println(t1SelectableChampions)
-		fmt.Println(t2SelectableChampions)
 		return numT1Picks + 1, numT2Picks
 	case "T2GB":
 		delete(t1SelectableChampions.BannableChampions, championId)
@@ -256,16 +247,12 @@ func updateSelectableChampionsInPlace(
 		delete(t2SelectableChampions.BannableChampions, championId)
 		delete(t1SelectableChampions.PickableSupportChampions, championId)
 		delete(t2SelectableChampions.BannableSupportChampions, championId)
-		fmt.Println(t1SelectableChampions)
-		fmt.Println(t2SelectableChampions)
 		return numT1Picks, numT2Picks
 	case "T2P":
 		delete(t1SelectableChampions.BannableChampions, championId)
 		delete(t2SelectableChampions.PickableChampions, championId)
 		delete(t1SelectableChampions.BannableSupportChampions, championId)
 		delete(t2SelectableChampions.PickableSupportChampions, championId)
-		fmt.Println(t1SelectableChampions)
-		fmt.Println(t2SelectableChampions)
 		return numT1Picks, numT2Picks + 1
 	default:
 		log.Fatal("updateSelectableChampionsInPlace(): Invalid draft step.")
