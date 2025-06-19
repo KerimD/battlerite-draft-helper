@@ -3,7 +3,7 @@ package c
 import (
 	"fmt"
 	"runtime"
-	"strings"
+	"slices"
 )
 
 func CopyMap(original map[byte]bool) map[byte]bool {
@@ -71,55 +71,47 @@ func kbToMb(kb uint64) uint64 {
 	return kb / 1024
 }
 
-func FormatCompletedStates(states []string, idToChampion map[string]Champion) {
-	for i, state := range states {
-		fmt.Printf("=== State %d ===\n%s\n\n", i+1, FormatCompletedState(state, idToChampion))
+func PrintTree(node *ScoredTrieNode, maxDepth int) {
+	printTree(node, 0, maxDepth)
+}
+
+func printTree(node *ScoredTrieNode, currentDepth int, maxDepth int) {
+	if node == nil || currentDepth > maxDepth {
+		return
+	}
+
+	indent := ""
+	for i := 0; i < currentDepth; i++ {
+		indent += "|  "
+	}
+
+	if node.ChampionName != "" {
+		fmt.Printf("%s%s %s: %.4f\n", indent, DraftOrder[currentDepth-1], node.ChampionName, node.AverageEvaluation)
+	}
+
+	sortedList := mapToSortedSlice(node.Children)
+
+	for _, childNode := range sortedList {
+		printTree(&childNode, currentDepth+1, maxDepth)
 	}
 }
 
-func FormatCompletedState(state string, idToChampion map[string]Champion) string {
-	var t1Bans, t1Picks, t2Bans, t2Picks []string
+func mapToSortedSlice(nodesMap map[byte]*ScoredTrieNode) []ScoredTrieNode {
+	nodes := make([]ScoredTrieNode, 0, len(nodesMap))
 
-	for i := 0; i < len(DraftOrder); i++ {
-		championId := string(state[i])
-
-		champion, exists := idToChampion[championId]
-		championName := "Unknown"
-		if exists {
-			championName = champion.Name
-		}
-
-		draftStep := DraftOrder[i]
-
-		switch {
-		case strings.HasPrefix(draftStep, "T1") && (strings.Contains(draftStep, "B") || strings.Contains(draftStep, "GB")):
-			// Team 1 ban
-			if strings.Contains(draftStep, "GB") {
-				championName += " (G)" // Mark global bans
-			}
-			t1Bans = append(t1Bans, championName)
-		case strings.HasPrefix(draftStep, "T1") && strings.Contains(draftStep, "P"):
-			// Team 1 pick
-			t1Picks = append(t1Picks, championName)
-		case strings.HasPrefix(draftStep, "T2") && (strings.Contains(draftStep, "B") || strings.Contains(draftStep, "GB")):
-			// Team 2 ban
-			if strings.Contains(draftStep, "GB") {
-				championName += " (G)" // Mark global bans
-			}
-			t2Bans = append(t2Bans, championName)
-		case strings.HasPrefix(draftStep, "T2") && strings.Contains(draftStep, "P"):
-			// Team 2 pick
-			t2Picks = append(t2Picks, championName)
-		}
+	for _, node := range nodesMap {
+		nodes = append(nodes, *node)
 	}
 
-	var result strings.Builder
-	result.WriteString("Team 1\n")
-	result.WriteString(fmt.Sprintf("Bans: %s\n", strings.Join(t1Bans, ", ")))
-	result.WriteString(fmt.Sprintf("Picks: %s\n", strings.Join(t1Picks, ", ")))
-	result.WriteString("\nTeam 2\n")
-	result.WriteString(fmt.Sprintf("Bans: %s\n", strings.Join(t2Bans, ", ")))
-	result.WriteString(fmt.Sprintf("Picks: %s", strings.Join(t2Picks, ", ")))
+	slices.SortFunc(nodes, func(a, b ScoredTrieNode) int {
+		if a.AverageEvaluation < b.AverageEvaluation {
+			return 1
+		} else if a.AverageEvaluation > b.AverageEvaluation {
+			return -1
+		} else {
+			return 0
+		}
+	})
 
-	return result.String()
+	return nodes
 }

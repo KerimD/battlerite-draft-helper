@@ -1,5 +1,5 @@
 name,opposition,evaluation
-Bakko,Croak,-1
+Bakko,Croak,-2
 Bakko,Freya,-1
 Bakko,Jamila,0
 Bakko,Raigon,1
@@ -20,7 +20,7 @@ Bakko,Varesh,0
 Bakko,Blossom,1
 Bakko,Lucie,0
 Bakko,Oldur,-1
-Bakko,Pearl,0
+Bakko,Pearl,1
 Bakko,Pestilus,-2
 Bakko,Poloma,-1
 Bakko,Sirius,1
@@ -37,7 +37,7 @@ Croak,Alysia,1
 Croak,Ashka,2
 Croak,Destiny,-1
 Croak,Ezmo,-1
-Croak,Iva,0
+Croak,Iva,-1
 Croak,Jade,-1
 Croak,Jumong,0
 Croak,Shen Rao,1
@@ -145,7 +145,7 @@ Rook,Pestilus,0
 Rook,Poloma,0
 Rook,Sirius,0
 Rook,Ulric,-1
-Rook,Zander,0
+Rook,Zander,-1
 Ruh Kaan,Shifu,0
 Ruh Kaan,Thorn,1
 Ruh Kaan,Alysia,0
@@ -251,7 +251,7 @@ Destiny,Varesh,0
 Destiny,Blossom,0
 Destiny,Lucie,-1
 Destiny,Oldur,0
-Destiny,Pearl,0
+Destiny,Pearl,1
 Destiny,Pestilus,-1
 Destiny,Poloma,-1
 Destiny,Sirius,2
@@ -366,13 +366,13 @@ Pearl,Pestilus,-2
 Pearl,Poloma,1
 Pearl,Sirius,1
 Pearl,Ulric,2
-Pearl,Zander,0
+Pearl,Zander,-1
 Pestilus,Poloma,0
 Pestilus,Sirius,0
 Pestilus,Ulric,-1
 Pestilus,Zander,-1
 Poloma,Sirius,0
-Poloma,Ulric,-1
+Poloma,Ulric,0
 Poloma,Zander,0
 Sirius,Ulric,-1
 Sirius,Zander,0

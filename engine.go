@@ -4,6 +4,8 @@ import (
 	"battlerite-draft-helper/c"
 	"battlerite-draft-helper/data"
 	"fmt"
+
+	//"fmt"
 	"log"
 )
 
@@ -48,21 +50,22 @@ func vroomVroom(championSet map[byte]c.Champion) {
 		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
 
+	tempNumChampionsRan := 0
 	evaluationSum := float32(0)
-	for championId, champion := range championSet {
+	for championId, _ := range championSet {
+		tempNumChampionsRan += 1
+
 		evaluation, childNode := kickOffDraft(championSet, championId)
-		fmt.Println(champion.Name, "->", evaluation)
 
 		evaluationSum += evaluation
 		node.Children[championId] = childNode
-
-		//c.FormatCompletedStates(node.CompletedStates[533116:533119], IdToChampion)
-		//c.FormatCompletedStates(node.CompletedStates, IdToChampion)
-		//fmt.Println(node.CompletedStates)
-		//break
+		break
 	}
 
-	node.AverageEvaluation = evaluationSum / float32(len(championSet))
+	//node.AverageEvaluation = evaluationSum / float32(len(championSet))
+	node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
+	fmt.Println("Team 1:", node.AverageEvaluation)
+	c.PrintTree(&node, 4)
 }
 
 func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float32, *c.ScoredTrieNode) {
@@ -130,8 +133,10 @@ func process(
 		t2SelectableChampions,
 	)
 
+	tempNumChampionsRan := 0
 	evaluationSum := float32(0)
 	for championId := range selectableChampions {
+		tempNumChampionsRan += 1
 
 		deepCopyT1SelectableChampions := c.DeepCopyTeamSelectableChampions(t1SelectableChampions)
 		deepCopyT2SelectableChampions := c.DeepCopyTeamSelectableChampions(t2SelectableChampions)
@@ -158,28 +163,28 @@ func process(
 			deepCopyT1SelectableChampions,
 			deepCopyT2SelectableChampions,
 		)
-		//if math.IsNaN(float64(evaluation)) {
-		//	fmt.Println("evaluation is NaN")
-		//}
+
 		evaluationSum += evaluation
 		node.Children[championId] = childNode
 
-		if draftStepIdx < 3 {
+		if draftStepIdx < 1 {
 			//fmt.Println("evaluation:", evaluation)
 			//c.PrintMemUsage()
-			//break
+			break
 		}
 	}
 
-	if len(selectableChampions) != 0 { // TODO: Remove when using longer champ list.
-		node.AverageEvaluation = evaluationSum / float32(len(selectableChampions))
+	// TODO: Remove when using longer champ list.
+	if len(selectableChampions) != 0 {
+		node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
 	}
+	//node.AverageEvaluation = evaluationSum / float32(len(selectableChampions))
 	//if draftStepIdx < 3 {
 	//	fmt.Printf("    -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
 	//}
-	if draftStepIdx < 2 {
-		fmt.Printf("  -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
-	}
+	//if draftStepIdx < 2 {
+	//	fmt.Printf("  -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
+	//}
 	return node.AverageEvaluation, &node
 }
 
