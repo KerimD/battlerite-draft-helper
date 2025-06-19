@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-func CopyMap(original map[string]bool) map[string]bool {
-	newMap := make(map[string]bool, len(original))
+func CopyMap(original map[byte]bool) map[byte]bool {
+	newMap := make(map[byte]bool, len(original))
 	for key, value := range original {
 		newMap[key] = value
 	}
 	return newMap
 }
 
-func CreateTeamSelectableChampions(champions map[string]Champion) TeamSelectableChampions {
+func CreateTeamSelectableChampions(champions map[byte]Champion) TeamSelectableChampions {
 	teamSelectableChampions := TeamSelectableChampionsConstructor()
 
 	for championId, champion := range champions {
@@ -42,10 +42,10 @@ func DeepCopyTeamSelectableChampions(teamSelectableChampions TeamSelectableChamp
 
 func TeamSelectableChampionsConstructor() TeamSelectableChampions {
 	return TeamSelectableChampions{
-		PickableChampions:        make(map[string]bool),
-		BannableChampions:        make(map[string]bool),
-		PickableSupportChampions: make(map[string]bool),
-		BannableSupportChampions: make(map[string]bool),
+		PickableChampions:        make(map[byte]bool),
+		BannableChampions:        make(map[byte]bool),
+		PickableSupportChampions: make(map[byte]bool),
+		BannableSupportChampions: make(map[byte]bool),
 	}
 }
 

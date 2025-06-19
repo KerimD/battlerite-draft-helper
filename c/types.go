@@ -5,19 +5,19 @@ type Role string
 type Champion struct {
 	Name string
 	Role Role
-	Id   string
+	Id   byte
 }
 
 type ScoredTrieNode struct {
 	ChampionName      string
 	AverageEvaluation int
-	CompletedStates   []string
-	Children          map[string]*ScoredTrieNode
+	CompletedStates   [][]byte
+	Children          map[byte]*ScoredTrieNode
 }
 
 type TeamSelectableChampions struct {
-	PickableChampions        map[string]bool
-	BannableChampions        map[string]bool
-	PickableSupportChampions map[string]bool
-	BannableSupportChampions map[string]bool
+	PickableChampions        map[byte]bool
+	BannableChampions        map[byte]bool
+	PickableSupportChampions map[byte]bool
+	BannableSupportChampions map[byte]bool
 }

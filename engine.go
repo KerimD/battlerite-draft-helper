@@ -11,17 +11,19 @@ const DataDir = "data/"
 
 var (
 	NumChampions     = 0
-	ChampionNameToId = make(map[string]string)
-	IdToChampion     = make(map[string]c.Champion)
+	ChampionNameToId = make(map[string]byte)
+	IdToChampion     = make(map[byte]c.Champion)
+	ChampionMatchups = make(map[byte]map[byte]int)
+	ChampionSynergys = make(map[byte]map[byte]int)
 )
 
 // Note: Currently does not support global bans after picks.
 func main() {
-	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
-	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
-	initializeChampionMaps(champions)
+	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
+	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
+	initializeGlobalVariables(champions)
 
-	championSet := make(map[string]c.Champion, len(champions))
+	championSet := make(map[byte]c.Champion, len(champions))
 	for _, champion := range champions {
 		championSet[champion.Id] = champion
 	}
@@ -29,20 +31,22 @@ func main() {
 	vroomVroom(championSet)
 }
 
-func initializeChampionMaps(champions []c.Champion) {
+func initializeGlobalVariables(champions []c.Champion) {
 	NumChampions = len(champions)
 	for _, champion := range champions {
 		ChampionNameToId[champion.Name] = champion.Id
 		IdToChampion[champion.Id] = champion
 	}
+	ChampionMatchups = data.FormatCsvData(ChampionNameToId, DataDir+data.MatchupsCsvFilename)
+	ChampionSynergys = data.FormatCsvData(ChampionNameToId, DataDir+data.SynergiesCsvFilename)
 }
 
-func vroomVroom(championSet map[string]c.Champion) {
+func vroomVroom(championSet map[byte]c.Champion) {
 	node := c.ScoredTrieNode{
 		ChampionName:      "",
 		AverageEvaluation: 0,
-		CompletedStates:   []string{},
-		Children:          make(map[string]*c.ScoredTrieNode),
+		CompletedStates:   [][]byte{},
+		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
 
 	evaluationSum := 0
@@ -62,7 +66,7 @@ func vroomVroom(championSet map[string]c.Champion) {
 	node.AverageEvaluation = evaluationSum / len(championSet)
 }
 
-func kickOffDraft(championSet map[string]c.Champion, chosenChampionId string) (int, []string) {
+func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (int, [][]byte) {
 	t1SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 	t2SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 
@@ -76,7 +80,7 @@ func kickOffDraft(championSet map[string]c.Champion, chosenChampionId string) (i
 	)
 
 	return process(
-		"",
+		[]byte{},
 		chosenChampionId,
 		0,
 		numT1Picks,
@@ -89,8 +93,8 @@ func kickOffDraft(championSet map[string]c.Champion, chosenChampionId string) (i
 }
 
 func process(
-	previousState string,
-	chosenChampionId string,
+	previousState []byte,
+	chosenChampionId byte,
 	draftStepIdx int,
 	numT1Picks int,
 	numT2Picks int,
@@ -98,21 +102,20 @@ func process(
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) (int, []string) {
-	currentState := previousState + chosenChampionId
+) (int, [][]byte) {
+	currentState := append(previousState, chosenChampionId)
 
 	// Base case
 	if draftStepIdx >= len(c.DraftOrder)-1 {
-		evaluation := 9
-		// TODO: Evaluate completed state.
-		return evaluation, []string{currentState}
+		evaluation := evaluateCompletedState(currentState)
+		return evaluation, [][]byte{currentState}
 	}
 
 	node := c.ScoredTrieNode{
 		ChampionName:      IdToChampion[chosenChampionId].Name,
 		AverageEvaluation: 0,
-		CompletedStates:   []string{},
-		Children:          make(map[string]*c.ScoredTrieNode),
+		CompletedStates:   [][]byte{},
+		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
 
 	selectableChampions := getSelectableChampions(
@@ -157,14 +160,39 @@ func process(
 		evaluationSum += evaluation
 		node.CompletedStates = append(node.CompletedStates, completedStates...)
 
-		if draftStepIdx < 6 {
-			fmt.Println(currentState, " -> ", IdToChampion[championId], "num completed states: ", len(completedStates))
-			c.PrintMemUsage()
+		if draftStepIdx < 2 {
+			fmt.Println(currentState, " -> ", IdToChampion[championId].Name, "num completed states: ", len(completedStates))
+			//c.PrintMemUsage()
 		}
 	}
 
 	node.AverageEvaluation = evaluationSum / NumChampions
 	return node.AverageEvaluation, node.CompletedStates
+}
+
+// From T1's perspective.
+func evaluateCompletedState(completedState []byte) int {
+	evaluation := 0
+	t1Picks := []byte{
+		completedState[c.T1PIdxs[0]],
+		completedState[c.T1PIdxs[1]],
+		completedState[c.T1PIdxs[2]],
+	}
+	t2Picks := []byte{
+		completedState[c.T2PIdxs[0]],
+		completedState[c.T2PIdxs[1]],
+		completedState[c.T2PIdxs[2]],
+	}
+
+	for _, champion1Id := range t1Picks {
+		for _, champion2Id := range t2Picks {
+			matchup := ChampionMatchups[champion1Id][champion2Id]
+			synergy := ChampionSynergys[champion1Id][champion2Id]
+			evaluation += matchup + synergy
+		}
+	}
+
+	return evaluation
 }
 
 func getSelectableChampions(
@@ -175,7 +203,7 @@ func getSelectableChampions(
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) map[string]bool {
+) map[byte]bool {
 	t1NeedsSupportThisStep := !t1HasSupport && numT1Picks >= 2
 	t2NeedsSupportThisStep := !t2HasSupport && numT2Picks >= 2
 
@@ -207,7 +235,7 @@ func getSelectableChampions(
 }
 
 func updateSelectableChampionsInPlace(
-	championId string,
+	championId byte,
 	currDraftStepIdx int,
 	numT1Picks int,
 	numT2Picks int,

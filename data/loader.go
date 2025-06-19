@@ -1,4 +1,4 @@
-package main
+package data
 
 import (
 	"battlerite-draft-helper/c"
@@ -45,11 +45,27 @@ func GetChampionsFromCsv(filename string) []c.Champion {
 		champions = append(champions, c.Champion{
 			Name: row[0],
 			Role: c.Role(row[1]),
-			Id:   row[2],
+			Id:   byte(i - 1),
 		})
 	}
 
 	return champions
+}
+
+func FormatCsvData(championNameToId map[string]byte, filename string) map[byte]map[byte]int {
+	data := getCsvData(filename)
+	stringData := parseCsvData(data)
+
+	byteData := make(map[byte]map[byte]int)
+	for name, nameId := range championNameToId {
+		for opposition, oppositionId := range championNameToId {
+			if byteData[nameId] == nil {
+				byteData[nameId] = make(map[byte]int)
+			}
+			byteData[nameId][oppositionId] = stringData[name][opposition]
+		}
+	}
+	return byteData
 }
 
 func createMatchupsCsv(champions []c.Champion, filename string) {
@@ -89,7 +105,12 @@ func saveMatchupsToCsvFile(matchups [][]string, filename string) {
 
 func migrateMatchupsCsvToJson() {
 	data := getCsvData(MatchupsCsvFilename)
+	matchups := parseCsvData(data)
+	sortedMatchups := sortMatchups(matchups)
+	SaveDataToJsonFile(sortedMatchups, MatchupsJsonFilename)
+}
 
+func parseCsvData(data [][]string) map[string]map[string]int {
 	matchups := make(map[string]map[string]int)
 	for i, row := range data {
 		if i == 0 {
@@ -97,9 +118,7 @@ func migrateMatchupsCsvToJson() {
 		}
 		populateMatchups(row, matchups)
 	}
-
-	sortedMatchups := sortMatchups(matchups)
-	SaveDataToJsonFile(sortedMatchups, MatchupsJsonFilename)
+	return matchups
 }
 
 func populateMatchups(row []string, matchups map[string]map[string]int) {
@@ -111,7 +130,7 @@ func populateMatchups(row []string, matchups map[string]map[string]int) {
 	}
 
 	populateMatchup(matchups, name, opposition, evaluation)
-	populateMatchup(matchups, opposition, name, -1*evaluation)
+	populateMatchup(matchups, opposition, name, (-1)*evaluation)
 }
 
 func populateMatchup(matchups map[string]map[string]int, name string, opposition string, evaluation int) {
