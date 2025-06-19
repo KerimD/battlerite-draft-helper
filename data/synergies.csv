@@ -7,38 +7,38 @@ Bakko,Rook,-1
 Bakko,Ruh Kaan,-1
 Bakko,Shifu,-1
 Bakko,Thorn,-1
-Bakko,Alysia,-2
-Bakko,Ashka,-2
+Bakko,Alysia,1
+Bakko,Ashka,1
 Bakko,Destiny,0
 Bakko,Ezmo,0
 Bakko,Iva,0
-Bakko,Jade,0
+Bakko,Jade,1
 Bakko,Jumong,0
 Bakko,Shen Rao,0
 Bakko,Taya,0
 Bakko,Varesh,0
-Bakko,Blossom,-2
+Bakko,Blossom,1
 Bakko,Lucie,0
 Bakko,Oldur,0
 Bakko,Pearl,0
-Bakko,Pestilus,-2
+Bakko,Pestilus,1
 Bakko,Poloma,0
 Bakko,Sirius,0
-Bakko,Ulric,-2
+Bakko,Ulric,1
 Bakko,Zander,0
 Croak,Freya,-1
 Croak,Jamila,-1
 Croak,Raigon,-1
-Croak,Rook,-2
+Croak,Rook,1
 Croak,Ruh Kaan,-1
 Croak,Shifu,-1
 Croak,Thorn,-1
 Croak,Alysia,0
-Croak,Ashka,-2
+Croak,Ashka,1
 Croak,Destiny,0
 Croak,Ezmo,0
 Croak,Iva,0
-Croak,Jade,-2
+Croak,Jade,1
 Croak,Jumong,0
 Croak,Shen Rao,0
 Croak,Taya,0
@@ -50,7 +50,7 @@ Croak,Pearl,0
 Croak,Pestilus,0
 Croak,Poloma,0
 Croak,Sirius,0
-Croak,Ulric,-2
+Croak,Ulric,1
 Croak,Zander,0
 Freya,Jamila,-1
 Freya,Raigon,-1
@@ -105,7 +105,7 @@ Raigon,Rook,-1
 Raigon,Ruh Kaan,-1
 Raigon,Shifu,-1
 Raigon,Thorn,-1
-Raigon,Alysia,-2
+Raigon,Alysia,1
 Raigon,Ashka,0
 Raigon,Destiny,0
 Raigon,Ezmo,0
@@ -116,7 +116,7 @@ Raigon,Shen Rao,0
 Raigon,Taya,0
 Raigon,Varesh,0
 Raigon,Blossom,0
-Raigon,Lucie,-2
+Raigon,Lucie,1
 Raigon,Oldur,0
 Raigon,Pearl,0
 Raigon,Pestilus,0
@@ -127,24 +127,24 @@ Raigon,Zander,0
 Rook,Ruh Kaan,-1
 Rook,Shifu,-1
 Rook,Thorn,0
-Rook,Alysia,-2
+Rook,Alysia,1
 Rook,Ashka,0
 Rook,Destiny,0
 Rook,Ezmo,0
-Rook,Iva,-2
+Rook,Iva,1
 Rook,Jade,0
 Rook,Jumong,0
 Rook,Shen Rao,0
 Rook,Taya,0
-Rook,Varesh,-2
+Rook,Varesh,1
 Rook,Blossom,0
 Rook,Lucie,0
 Rook,Oldur,0
-Rook,Pearl,-2
+Rook,Pearl,1
 Rook,Pestilus,0
-Rook,Poloma,-2
+Rook,Poloma,1
 Rook,Sirius,0
-Rook,Ulric,-2
+Rook,Ulric,1
 Rook,Zander,0
 Ruh Kaan,Shifu,-1
 Ruh Kaan,Thorn,-1
@@ -161,7 +161,7 @@ Ruh Kaan,Varesh,0
 Ruh Kaan,Blossom,0
 Ruh Kaan,Lucie,0
 Ruh Kaan,Oldur,0
-Ruh Kaan,Pearl,-2
+Ruh Kaan,Pearl,1
 Ruh Kaan,Pestilus,0
 Ruh Kaan,Poloma,0
 Ruh Kaan,Sirius,0
@@ -169,7 +169,7 @@ Ruh Kaan,Ulric,0
 Ruh Kaan,Zander,0
 Shifu,Thorn,-1
 Shifu,Alysia,0
-Shifu,Ashka,-2
+Shifu,Ashka,1
 Shifu,Destiny,0
 Shifu,Ezmo,0
 Shifu,Iva,0
@@ -215,7 +215,7 @@ Alysia,Jumong,-1
 Alysia,Shen Rao,-1
 Alysia,Taya,-1
 Alysia,Varesh,-1
-Alysia,Blossom,-2
+Alysia,Blossom,1
 Alysia,Lucie,0
 Alysia,Oldur,0
 Alysia,Pearl,0
@@ -236,7 +236,7 @@ Ashka,Blossom,0
 Ashka,Lucie,0
 Ashka,Oldur,0
 Ashka,Pearl,0
-Ashka,Pestilus,-2
+Ashka,Pestilus,1
 Ashka,Poloma,0
 Ashka,Sirius,0
 Ashka,Ulric,0
@@ -249,7 +249,7 @@ Destiny,Shen Rao,-1
 Destiny,Taya,-1
 Destiny,Varesh,-1
 Destiny,Blossom,0
-Destiny,Lucie,-2
+Destiny,Lucie,1
 Destiny,Oldur,0
 Destiny,Pearl,0
 Destiny,Pestilus,0
@@ -290,14 +290,14 @@ Jade,Jumong,-1
 Jade,Shen Rao,-1
 Jade,Taya,-1
 Jade,Varesh,-1
-Jade,Blossom,-2
+Jade,Blossom,1
 Jade,Lucie,0
 Jade,Oldur,0
 Jade,Pearl,0
 Jade,Pestilus,0
 Jade,Poloma,0
 Jade,Sirius,0
-Jade,Ulric,-2
+Jade,Ulric,1
 Jade,Zander,0
 Jumong,Shen Rao,-1
 Jumong,Taya,-1
@@ -333,14 +333,14 @@ Taya,Sirius,0
 Taya,Ulric,0
 Taya,Zander,-1
 Varesh,Blossom,0
-Varesh,Lucie,-2
+Varesh,Lucie,1
 Varesh,Oldur,0
 Varesh,Pearl,0
-Varesh,Pestilus,-2
-Varesh,Poloma,-2
+Varesh,Pestilus,1
+Varesh,Poloma,1
 Varesh,Sirius,0
 Varesh,Ulric,0
-Varesh,Zander,-2
+Varesh,Zander,1
 Blossom,Lucie,-1
 Blossom,Oldur,-1
 Blossom,Pearl,-1
@@ -360,7 +360,7 @@ Oldur,Pearl,-1
 Oldur,Pestilus,-1
 Oldur,Poloma,-1
 Oldur,Sirius,-1
-Oldur,Ulric,-2
+Oldur,Ulric,1
 Oldur,Zander,-1
 Pearl,Pestilus,-1
 Pearl,Poloma,-1
@@ -376,4 +376,4 @@ Poloma,Ulric,-1
 Poloma,Zander,-1
 Sirius,Ulric,-1
 Sirius,Zander,-1
-Ulric,Zander,-2
+Ulric,Zander,1

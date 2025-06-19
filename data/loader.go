@@ -52,9 +52,9 @@ func GetChampionsFromCsv(filename string) []c.Champion {
 	return champions
 }
 
-func FormatCsvData(championNameToId map[string]byte, filename string) map[byte]map[byte]int {
+func FormatCsvData(championNameToId map[string]byte, filename string, isSynergy bool) map[byte]map[byte]int {
 	data := getCsvData(filename)
-	stringData := parseCsvData(data)
+	stringData := parseCsvData(data, isSynergy)
 
 	byteData := make(map[byte]map[byte]int)
 	for name, nameId := range championNameToId {
@@ -105,23 +105,23 @@ func saveMatchupsToCsvFile(matchups [][]string, filename string) {
 
 func migrateMatchupsCsvToJson() {
 	data := getCsvData(MatchupsCsvFilename)
-	matchups := parseCsvData(data)
+	matchups := parseCsvData(data, false)
 	sortedMatchups := sortMatchups(matchups)
 	SaveDataToJsonFile(sortedMatchups, MatchupsJsonFilename)
 }
 
-func parseCsvData(data [][]string) map[string]map[string]int {
+func parseCsvData(data [][]string, isSynergy bool) map[string]map[string]int {
 	matchups := make(map[string]map[string]int)
 	for i, row := range data {
 		if i == 0 {
 			continue
 		}
-		populateMatchups(row, matchups)
+		populateMatchups(row, matchups, isSynergy)
 	}
 	return matchups
 }
 
-func populateMatchups(row []string, matchups map[string]map[string]int) {
+func populateMatchups(row []string, matchups map[string]map[string]int, isSynergy bool) {
 	name := row[0]
 	opposition := row[1]
 	evaluation, err := strconv.Atoi(row[2])
@@ -130,7 +130,11 @@ func populateMatchups(row []string, matchups map[string]map[string]int) {
 	}
 
 	populateMatchup(matchups, name, opposition, evaluation)
-	populateMatchup(matchups, opposition, name, (-1)*evaluation)
+	if isSynergy {
+		populateMatchup(matchups, opposition, name, evaluation)
+	} else {
+		populateMatchup(matchups, opposition, name, (-1)*evaluation)
+	}
 }
 
 func populateMatchup(matchups map[string]map[string]int, name string, opposition string, evaluation int) {

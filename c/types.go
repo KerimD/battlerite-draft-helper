@@ -10,8 +10,7 @@ type Champion struct {
 
 type ScoredTrieNode struct {
 	ChampionName      string
-	AverageEvaluation int
-	CompletedStates   [][]byte
+	AverageEvaluation float32
 	Children          map[byte]*ScoredTrieNode
 }
 

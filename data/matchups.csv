@@ -1,5 +1,5 @@
 name,opposition,evaluation
-Bakko,Croak,-1
+Bakko,Croak,-2
 Bakko,Freya,-1
 Bakko,Jamila,0
 Bakko,Raigon,1
@@ -37,7 +37,7 @@ Croak,Alysia,1
 Croak,Ashka,2
 Croak,Destiny,-1
 Croak,Ezmo,-1
-Croak,Iva,0
+Croak,Iva,-1
 Croak,Jade,-1
 Croak,Jumong,0
 Croak,Shen Rao,1
@@ -372,7 +372,7 @@ Pestilus,Sirius,0
 Pestilus,Ulric,-1
 Pestilus,Zander,-1
 Poloma,Sirius,0
-Poloma,Ulric,-1
+Poloma,Ulric,0
 Poloma,Zander,0
 Sirius,Ulric,-1
 Sirius,Zander,0

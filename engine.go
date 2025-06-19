@@ -37,25 +37,24 @@ func initializeGlobalVariables(champions []c.Champion) {
 		ChampionNameToId[champion.Name] = champion.Id
 		IdToChampion[champion.Id] = champion
 	}
-	ChampionMatchups = data.FormatCsvData(ChampionNameToId, DataDir+data.MatchupsCsvFilename)
-	ChampionSynergys = data.FormatCsvData(ChampionNameToId, DataDir+data.SynergiesCsvFilename)
+	ChampionMatchups = data.FormatCsvData(ChampionNameToId, DataDir+data.MatchupsCsvFilename, false)
+	ChampionSynergys = data.FormatCsvData(ChampionNameToId, DataDir+data.SynergiesCsvFilename, true)
 }
 
 func vroomVroom(championSet map[byte]c.Champion) {
 	node := c.ScoredTrieNode{
 		ChampionName:      "",
 		AverageEvaluation: 0,
-		CompletedStates:   [][]byte{},
 		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
 
-	evaluationSum := 0
+	evaluationSum := float32(0)
 	for championId, champion := range championSet {
-		evaluation, completedStates := kickOffDraft(championSet, championId)
-		fmt.Println("Processed: ", champion, " with evaluation: ", evaluation, " and num completed states: ", len(completedStates))
+		evaluation, childNode := kickOffDraft(championSet, championId)
+		fmt.Println(champion.Name, "->", evaluation)
 
 		evaluationSum += evaluation
-		node.CompletedStates = append(node.CompletedStates, completedStates...)
+		node.Children[championId] = childNode
 
 		//c.FormatCompletedStates(node.CompletedStates[533116:533119], IdToChampion)
 		//c.FormatCompletedStates(node.CompletedStates, IdToChampion)
@@ -63,10 +62,10 @@ func vroomVroom(championSet map[byte]c.Champion) {
 		//break
 	}
 
-	node.AverageEvaluation = evaluationSum / len(championSet)
+	node.AverageEvaluation = evaluationSum / float32(len(championSet))
 }
 
-func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (int, [][]byte) {
+func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float32, *c.ScoredTrieNode) {
 	t1SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 	t2SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 
@@ -102,19 +101,22 @@ func process(
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) (int, [][]byte) {
+) (float32, *c.ScoredTrieNode) {
 	currentState := append(previousState, chosenChampionId)
 
 	// Base case
 	if draftStepIdx >= len(c.DraftOrder)-1 {
-		evaluation := evaluateCompletedState(currentState)
-		return evaluation, [][]byte{currentState}
+		evaluation := float32(evaluateCompletedState(currentState))
+		leafNode := c.ScoredTrieNode{
+			ChampionName:      IdToChampion[chosenChampionId].Name,
+			AverageEvaluation: evaluation,
+		}
+		return evaluation, &leafNode
 	}
 
 	node := c.ScoredTrieNode{
 		ChampionName:      IdToChampion[chosenChampionId].Name,
 		AverageEvaluation: 0,
-		CompletedStates:   [][]byte{},
 		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
 
@@ -128,7 +130,7 @@ func process(
 		t2SelectableChampions,
 	)
 
-	evaluationSum := 0
+	evaluationSum := float32(0)
 	for championId := range selectableChampions {
 
 		deepCopyT1SelectableChampions := c.DeepCopyTeamSelectableChampions(t1SelectableChampions)
@@ -145,7 +147,7 @@ func process(
 			)
 		}
 
-		evaluation, completedStates := process(
+		evaluation, childNode := process(
 			currentState,
 			championId,
 			draftStepIdx+1,
@@ -156,18 +158,29 @@ func process(
 			deepCopyT1SelectableChampions,
 			deepCopyT2SelectableChampions,
 		)
-
+		//if math.IsNaN(float64(evaluation)) {
+		//	fmt.Println("evaluation is NaN")
+		//}
 		evaluationSum += evaluation
-		node.CompletedStates = append(node.CompletedStates, completedStates...)
+		node.Children[championId] = childNode
 
-		if draftStepIdx < 2 {
-			fmt.Println(currentState, " -> ", IdToChampion[championId].Name, "num completed states: ", len(completedStates))
+		if draftStepIdx < 3 {
+			//fmt.Println("evaluation:", evaluation)
 			//c.PrintMemUsage()
+			//break
 		}
 	}
 
-	node.AverageEvaluation = evaluationSum / NumChampions
-	return node.AverageEvaluation, node.CompletedStates
+	if len(selectableChampions) != 0 { // TODO: Remove when using longer champ list.
+		node.AverageEvaluation = evaluationSum / float32(len(selectableChampions))
+	}
+	//if draftStepIdx < 3 {
+	//	fmt.Printf("    -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
+	//}
+	if draftStepIdx < 2 {
+		fmt.Printf("  -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
+	}
+	return node.AverageEvaluation, &node
 }
 
 // From T1's perspective.
@@ -184,14 +197,26 @@ func evaluateCompletedState(completedState []byte) int {
 		completedState[c.T2PIdxs[2]],
 	}
 
-	for _, champion1Id := range t1Picks {
-		for _, champion2Id := range t2Picks {
-			matchup := ChampionMatchups[champion1Id][champion2Id]
-			synergy := ChampionSynergys[champion1Id][champion2Id]
-			evaluation += matchup + synergy
+	for i, t1ChampionId := range t1Picks {
+		for _, t2ChampionId := range t2Picks {
+			matchup := ChampionMatchups[t1ChampionId][t2ChampionId]
+			evaluation += matchup
+		}
+
+		for _, t1ChampionId2 := range t1Picks[i+1:] {
+			synergy := ChampionSynergys[t1ChampionId][t1ChampionId2]
+			evaluation += synergy
 		}
 	}
 
+	for i, t2ChampionId := range t2Picks {
+		for _, t2ChampionId2 := range t2Picks[i+1:] {
+			synergy := ChampionSynergys[t2ChampionId][t2ChampionId2]
+			evaluation += (-1) * synergy
+		}
+	}
+
+	//fmt.Println(completedState, "evaluation:", evaluation)
 	return evaluation
 }
 
