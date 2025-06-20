@@ -51,32 +51,40 @@ func vroomVroom(championSet map[byte]c.Champion) {
 	}
 
 	tempNumChampionsRan := 0
+	numCompletedStates := 0
 	evaluationSum := float32(0)
 	for championId, _ := range championSet {
+		if championId != 0 {
+			continue
+		}
+
 		tempNumChampionsRan += 1
 
-		evaluation, childNode := kickOffDraft(championSet, championId)
+		evaluation, childNode, asdf := kickOffDraft(championSet, championId)
 
 		evaluationSum += evaluation
 		node.Children[championId] = childNode
+		numCompletedStates += asdf
 		break
 	}
 
 	//node.AverageEvaluation = evaluationSum / float32(len(championSet))
 	node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
+	fmt.Println("numCompletedStates 7109519:", numCompletedStates)
 	fmt.Println("Team 1:", node.AverageEvaluation)
 	c.PrintTree(&node, 4)
 }
 
-func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float32, *c.ScoredTrieNode) {
+func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float32, *c.ScoredTrieNode, int) {
 	t1SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 	t2SelectableChampions := c.CreateTeamSelectableChampions(championSet)
+	numT1Picks, numT2Picks := 0, 0
 
-	numT1Picks, numT2Picks := updateSelectableChampionsInPlace(
+	deleteChampionIdFromSelectableChampionsInPlace(
 		chosenChampionId,
 		0,
-		0,
-		0,
+		&numT1Picks,
+		&numT2Picks,
 		t1SelectableChampions,
 		t2SelectableChampions,
 	)
@@ -104,7 +112,7 @@ func process(
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) (float32, *c.ScoredTrieNode) {
+) (float32, *c.ScoredTrieNode, int) {
 	currentState := append(previousState, chosenChampionId)
 
 	// Base case
@@ -114,7 +122,7 @@ func process(
 			ChampionName:      IdToChampion[chosenChampionId].Name,
 			AverageEvaluation: evaluation,
 		}
-		return evaluation, &leafNode
+		return evaluation, &leafNode, 1
 	}
 
 	node := c.ScoredTrieNode{
@@ -134,38 +142,49 @@ func process(
 	)
 
 	tempNumChampionsRan := 0
+	numCompletedStates := 0
 	evaluationSum := float32(0)
 	for championId := range selectableChampions {
+		if (draftStepIdx == 0) && (championId != 1) {
+			continue
+		}
+
 		tempNumChampionsRan += 1
 
-		deepCopyT1SelectableChampions := c.DeepCopyTeamSelectableChampions(t1SelectableChampions)
-		deepCopyT2SelectableChampions := c.DeepCopyTeamSelectableChampions(t2SelectableChampions)
+		copyOfNumT1Picks := numT1Picks
+		copyOfNumT2Picks := numT2Picks
+		//deepCopyT1SelectableChampions := c.DeepCopyTeamSelectableChampions(t1SelectableChampions)
+		//deepCopyT2SelectableChampions := c.DeepCopyTeamSelectableChampions(t2SelectableChampions)
 
+		var affectedMaps []*map[byte]bool
 		if draftStepIdx < len(c.DraftOrder)-1 {
-			numT1Picks, numT2Picks = updateSelectableChampionsInPlace(
+			affectedMaps = deleteChampionIdFromSelectableChampionsInPlace(
 				championId,
 				draftStepIdx+1,
-				numT1Picks,
-				numT2Picks,
-				deepCopyT1SelectableChampions,
-				deepCopyT2SelectableChampions,
+				&copyOfNumT1Picks,
+				&copyOfNumT2Picks,
+				t1SelectableChampions,
+				t2SelectableChampions,
 			)
 		}
 
-		evaluation, childNode := process(
+		evaluation, childNode, asdf := process(
 			currentState,
 			championId,
 			draftStepIdx+1,
-			numT1Picks,
-			numT2Picks,
+			copyOfNumT1Picks,
+			copyOfNumT2Picks,
 			t1HasSupport || (c.DraftOrder[draftStepIdx+1] == "T1P" && IdToChampion[championId].Role == c.SupportRole),
 			t2HasSupport || (c.DraftOrder[draftStepIdx+1] == "T2P" && IdToChampion[championId].Role == c.SupportRole),
-			deepCopyT1SelectableChampions,
-			deepCopyT2SelectableChampions,
+			t1SelectableChampions,
+			t2SelectableChampions,
 		)
 
 		evaluationSum += evaluation
 		node.Children[championId] = childNode
+		numCompletedStates += asdf
+
+		addChampionIdToSelectableChampionsInPlace(championId, affectedMaps)
 
 		if draftStepIdx < 1 {
 			//fmt.Println("evaluation:", evaluation)
@@ -185,7 +204,7 @@ func process(
 	//if draftStepIdx < 2 {
 	//	fmt.Printf("  -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
 	//}
-	return node.AverageEvaluation, &node
+	return node.AverageEvaluation, &node, numCompletedStates
 }
 
 // From T1's perspective.
@@ -264,53 +283,112 @@ func getSelectableChampions(
 	}
 }
 
-func updateSelectableChampionsInPlace(
+func deleteChampionIdFromSelectableChampionsInPlace(
 	championId byte,
 	currDraftStepIdx int,
-	numT1Picks int,
-	numT2Picks int,
+	numT1Picks *int,
+	numT2Picks *int,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) (int, int) {
+) []*map[byte]bool {
 	switch c.DraftOrder[currDraftStepIdx] {
-	case "T1GB":
-		delete(t1SelectableChampions.PickableChampions, championId)
-		delete(t2SelectableChampions.BannableChampions, championId)
-		delete(t1SelectableChampions.PickableSupportChampions, championId)
-		delete(t2SelectableChampions.BannableSupportChampions, championId)
-		fallthrough
-	case "T1B":
-		delete(t1SelectableChampions.BannableChampions, championId)
-		delete(t2SelectableChampions.PickableChampions, championId)
-		delete(t1SelectableChampions.BannableSupportChampions, championId)
-		delete(t2SelectableChampions.PickableSupportChampions, championId)
-		return numT1Picks, numT2Picks
+	case "T1GB", "T2GB":
+		return globalBan(championId, t1SelectableChampions, t2SelectableChampions)
 	case "T1P":
-		delete(t1SelectableChampions.PickableChampions, championId)
-		delete(t2SelectableChampions.BannableChampions, championId)
-		delete(t1SelectableChampions.PickableSupportChampions, championId)
-		delete(t2SelectableChampions.BannableSupportChampions, championId)
-		return numT1Picks + 1, numT2Picks
-	case "T2GB":
-		delete(t1SelectableChampions.BannableChampions, championId)
-		delete(t2SelectableChampions.PickableChampions, championId)
-		delete(t1SelectableChampions.BannableSupportChampions, championId)
-		delete(t2SelectableChampions.PickableSupportChampions, championId)
-		fallthrough
-	case "T2B":
-		delete(t1SelectableChampions.PickableChampions, championId)
-		delete(t2SelectableChampions.BannableChampions, championId)
-		delete(t1SelectableChampions.PickableSupportChampions, championId)
-		delete(t2SelectableChampions.BannableSupportChampions, championId)
-		return numT1Picks, numT2Picks
+		*numT1Picks += 1
+		return t1PickT2Ban(championId, t1SelectableChampions, t2SelectableChampions)
+	case "T1B":
+		return t1BanT2Pick(championId, t1SelectableChampions, t2SelectableChampions)
 	case "T2P":
-		delete(t1SelectableChampions.BannableChampions, championId)
-		delete(t2SelectableChampions.PickableChampions, championId)
-		delete(t1SelectableChampions.BannableSupportChampions, championId)
-		delete(t2SelectableChampions.PickableSupportChampions, championId)
-		return numT1Picks, numT2Picks + 1
+		*numT2Picks += 1
+		return t1BanT2Pick(championId, t1SelectableChampions, t2SelectableChampions)
+	case "T2B":
+		return t1PickT2Ban(championId, t1SelectableChampions, t2SelectableChampions)
 	default:
 		log.Fatal("updateSelectableChampionsInPlace(): Invalid draft step.")
-		return numT1Picks, numT2Picks
+		return []*map[byte]bool{}
+	}
+}
+
+func globalBan(
+	championId byte,
+	t1SelectableChampions c.TeamSelectableChampions,
+	t2SelectableChampions c.TeamSelectableChampions,
+) []*map[byte]bool {
+	var affectedMaps []*map[byte]bool
+
+	delete(t1SelectableChampions.PickableChampions, championId)
+	delete(t1SelectableChampions.BannableChampions, championId)
+	delete(t2SelectableChampions.PickableChampions, championId)
+	delete(t2SelectableChampions.BannableChampions, championId)
+
+	delete(t1SelectableChampions.PickableSupportChampions, championId)
+	delete(t1SelectableChampions.BannableSupportChampions, championId)
+	delete(t2SelectableChampions.PickableSupportChampions, championId)
+	delete(t2SelectableChampions.BannableSupportChampions, championId)
+
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.PickableChampions)
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.BannableChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.PickableChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.BannableChampions)
+
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.PickableSupportChampions)
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.BannableSupportChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.PickableSupportChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.BannableSupportChampions)
+
+	return affectedMaps
+}
+
+func t1BanT2Pick(
+	championId byte,
+	t1SelectableChampions c.TeamSelectableChampions,
+	t2SelectableChampions c.TeamSelectableChampions,
+) []*map[byte]bool {
+	var affectedMaps []*map[byte]bool
+
+	delete(t1SelectableChampions.BannableChampions, championId)
+	delete(t2SelectableChampions.PickableChampions, championId)
+
+	delete(t1SelectableChampions.BannableSupportChampions, championId)
+	delete(t2SelectableChampions.PickableSupportChampions, championId)
+
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.BannableChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.PickableChampions)
+
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.BannableSupportChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.PickableSupportChampions)
+
+	return affectedMaps
+}
+
+func t1PickT2Ban(
+	championId byte,
+	t1SelectableChampions c.TeamSelectableChampions,
+	t2SelectableChampions c.TeamSelectableChampions,
+) []*map[byte]bool {
+	var affectedMaps []*map[byte]bool
+
+	delete(t1SelectableChampions.PickableChampions, championId)
+	delete(t2SelectableChampions.BannableChampions, championId)
+
+	delete(t1SelectableChampions.PickableSupportChampions, championId)
+	delete(t2SelectableChampions.BannableSupportChampions, championId)
+
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.PickableChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.BannableChampions)
+
+	affectedMaps = append(affectedMaps, &t1SelectableChampions.PickableSupportChampions)
+	affectedMaps = append(affectedMaps, &t2SelectableChampions.BannableSupportChampions)
+
+	return affectedMaps
+}
+
+func addChampionIdToSelectableChampionsInPlace(
+	championId byte,
+	affectedMaps []*map[byte]bool,
+) {
+	for _, affectedMap := range affectedMaps {
+		(*affectedMap)[championId] = true
 	}
 }
