@@ -4,6 +4,7 @@ import (
 	"battlerite-draft-helper/c"
 	"battlerite-draft-helper/data"
 	"fmt"
+	"time"
 
 	//"fmt"
 	"log"
@@ -30,7 +31,9 @@ func main() {
 		championSet[champion.Id] = champion
 	}
 
+	start := time.Now()
 	vroomVroom(championSet)
+	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
 func initializeGlobalVariables(champions []c.Champion) {
@@ -70,7 +73,7 @@ func vroomVroom(championSet map[byte]c.Champion) {
 
 	//node.AverageEvaluation = evaluationSum / float32(len(championSet))
 	node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
-	fmt.Println("numCompletedStates 7109519:", numCompletedStates)
+	fmt.Println("numCompletedStates 6350400:", numCompletedStates)
 	fmt.Println("Team 1:", node.AverageEvaluation)
 	c.PrintTree(&node, 4)
 }
@@ -144,8 +147,8 @@ func process(
 	tempNumChampionsRan := 0
 	numCompletedStates := 0
 	evaluationSum := float32(0)
-	for championId := range selectableChampions {
-		if (draftStepIdx == 0) && (championId != 1) {
+	for _, championId := range selectableChampions {
+		if (draftStepIdx+1 == 1) && (championId != 1) {
 			continue
 		}
 
@@ -153,8 +156,6 @@ func process(
 
 		copyOfNumT1Picks := numT1Picks
 		copyOfNumT2Picks := numT2Picks
-		//deepCopyT1SelectableChampions := c.DeepCopyTeamSelectableChampions(t1SelectableChampions)
-		//deepCopyT2SelectableChampions := c.DeepCopyTeamSelectableChampions(t2SelectableChampions)
 
 		var affectedMaps []*map[byte]bool
 		if draftStepIdx < len(c.DraftOrder)-1 {
@@ -186,13 +187,26 @@ func process(
 
 		addChampionIdToSelectableChampionsInPlace(championId, affectedMaps)
 
-		if draftStepIdx < 1 {
+		if draftStepIdx+1 == 2 {
+			//fmt.Println(c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name)
+			//fmt.Println("inside for loop", c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name, "evaluation:", evaluation, "evaluationSum", evaluationSum)
+		}
+		if draftStepIdx+1 < 2 {
 			//fmt.Println("evaluation:", evaluation)
 			//c.PrintMemUsage()
 			break
 		}
 	}
 
+	//if draftStepIdx+1 == 3 {
+	//	fmt.Println(c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan, "evaluation", evaluationSum/float32(tempNumChampionsRan))
+	//}
+	//if draftStepIdx+1 == 2 {
+	//	fmt.Println(IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan)
+	//}
+	//if draftStepIdx+1 == 1 {
+	//	fmt.Println(IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan)
+	//}
 	// TODO: Remove when using longer champ list.
 	if len(selectableChampions) != 0 {
 		node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
@@ -252,35 +266,41 @@ func getSelectableChampions(
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) map[byte]bool {
+) []byte {
+	var selectableChampions map[byte]bool
 	t1NeedsSupportThisStep := !t1HasSupport && numT1Picks >= 2
 	t2NeedsSupportThisStep := !t2HasSupport && numT2Picks >= 2
 
 	switch c.DraftOrder[draftStepIdx] {
 	case "T1P":
 		if t1NeedsSupportThisStep {
-			return t1SelectableChampions.PickableSupportChampions
+			selectableChampions = t1SelectableChampions.PickableSupportChampions
 		}
-		return t1SelectableChampions.PickableChampions
+		selectableChampions = t1SelectableChampions.PickableChampions
 	case "T1GB", "T1B":
 		if t2NeedsSupportThisStep {
-			return t1SelectableChampions.BannableSupportChampions
+			selectableChampions = t1SelectableChampions.BannableSupportChampions
 		}
-		return t1SelectableChampions.BannableChampions
+		selectableChampions = t1SelectableChampions.BannableChampions
 	case "T2P":
 		if t2NeedsSupportThisStep {
-			return t2SelectableChampions.PickableSupportChampions
+			selectableChampions = t2SelectableChampions.PickableSupportChampions
 		}
-		return t2SelectableChampions.PickableChampions
+		selectableChampions = t2SelectableChampions.PickableChampions
 	case "T2GB", "T2B":
 		if t1NeedsSupportThisStep {
-			return t2SelectableChampions.BannableSupportChampions
+			selectableChampions = t2SelectableChampions.BannableSupportChampions
 		}
-		return t2SelectableChampions.BannableChampions
+		selectableChampions = t2SelectableChampions.BannableChampions
 	default:
 		log.Fatal("getSelectableChampions(): Invalid draft step.")
-		return nil
 	}
+
+	selectableChampionsSlice := make([]byte, 0, len(selectableChampions))
+	for championId := range selectableChampions {
+		selectableChampionsSlice = append(selectableChampionsSlice, championId)
+	}
+	return selectableChampionsSlice
 }
 
 func deleteChampionIdFromSelectableChampionsInPlace(
