@@ -20,3 +20,12 @@ type TeamSelectableChampions struct {
 	PickableSupportChampions map[byte]bool
 	BannableSupportChampions map[byte]bool
 }
+
+type Player struct {
+	Name         string
+	championPool map[byte]bool
+}
+
+type Team struct {
+	Players []Player
+}

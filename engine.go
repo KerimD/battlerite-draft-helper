@@ -57,7 +57,7 @@ func vroomVroom(championSet map[byte]c.Champion) {
 	numCompletedStates := 0
 	evaluationSum := float32(0)
 	for championId, _ := range championSet {
-		if championId != 0 {
+		if championId != 6 {
 			continue
 		}
 
@@ -75,7 +75,7 @@ func vroomVroom(championSet map[byte]c.Champion) {
 	node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
 	fmt.Println("numCompletedStates 6350400:", numCompletedStates)
 	fmt.Println("Team 1:", node.AverageEvaluation)
-	c.PrintTree(&node, 4)
+	c.PrintTree(&node, 12)
 }
 
 func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float32, *c.ScoredTrieNode, int) {
@@ -105,6 +105,8 @@ func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float
 	)
 }
 
+var TestDraft = []byte{7, 8, 0, 0, 2, 2, 1, 1, 4, 4}
+
 func process(
 	previousState []byte,
 	chosenChampionId byte,
@@ -116,6 +118,7 @@ func process(
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
 ) (float32, *c.ScoredTrieNode, int) {
+	fmt.Println("process()", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name)
 	currentState := append(previousState, chosenChampionId)
 
 	// Base case
@@ -143,12 +146,13 @@ func process(
 		t1SelectableChampions,
 		t2SelectableChampions,
 	)
+	fmt.Println(c.DraftOrder[draftStepIdx+1], selectableChampions)
 
 	tempNumChampionsRan := 0
 	numCompletedStates := 0
 	evaluationSum := float32(0)
 	for _, championId := range selectableChampions {
-		if (draftStepIdx+1 == 1) && (championId != 1) {
+		if (draftStepIdx+1 < len(TestDraft)) && championId != TestDraft[draftStepIdx+1] {
 			continue
 		}
 
@@ -191,7 +195,7 @@ func process(
 			//fmt.Println(c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name)
 			//fmt.Println("inside for loop", c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name, "evaluation:", evaluation, "evaluationSum", evaluationSum)
 		}
-		if draftStepIdx+1 < 2 {
+		if draftStepIdx+1 < 10 {
 			//fmt.Println("evaluation:", evaluation)
 			//c.PrintMemUsage()
 			break
@@ -275,21 +279,25 @@ func getSelectableChampions(
 	case "T1P":
 		if t1NeedsSupportThisStep {
 			selectableChampions = t1SelectableChampions.PickableSupportChampions
+			break
 		}
 		selectableChampions = t1SelectableChampions.PickableChampions
 	case "T1GB", "T1B":
 		if t2NeedsSupportThisStep {
 			selectableChampions = t1SelectableChampions.BannableSupportChampions
+			break
 		}
 		selectableChampions = t1SelectableChampions.BannableChampions
 	case "T2P":
 		if t2NeedsSupportThisStep {
 			selectableChampions = t2SelectableChampions.PickableSupportChampions
+			break
 		}
 		selectableChampions = t2SelectableChampions.PickableChampions
 	case "T2GB", "T2B":
 		if t1NeedsSupportThisStep {
 			selectableChampions = t2SelectableChampions.BannableSupportChampions
+			break
 		}
 		selectableChampions = t2SelectableChampions.BannableChampions
 	default:
