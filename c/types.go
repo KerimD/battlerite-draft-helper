@@ -23,9 +23,11 @@ type TeamSelectableChampions struct {
 
 type Player struct {
 	Name         string
-	championPool map[byte]bool
+	ChampionPool []bool
 }
 
 type Team struct {
-	Players []Player
+	Pick1Pool []bool
+	Pick2Pool []bool
+	Pick3Pool []bool
 }

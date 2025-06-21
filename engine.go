@@ -18,6 +18,8 @@ var (
 	IdToChampion     = make(map[byte]c.Champion)
 	ChampionMatchups = make(map[byte]map[byte]int)
 	ChampionSynergys = make(map[byte]map[byte]int)
+	t1               c.Team
+	t2               c.Team
 )
 
 // Note: Currently does not support global bans after picks.
@@ -26,13 +28,16 @@ func main() {
 	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
 	initializeGlobalVariables(champions)
 
+	player1, player2, player3 := data.GetPlayerChampions(ChampionNameToId, len(champions), "deniz", "vet", "bo4")
+	//populateTeamPickPoolsUsingPlayersChampionPools(&t1, player1, player2, player3)
+
 	championSet := make(map[byte]c.Champion, len(champions))
 	for _, champion := range champions {
 		championSet[champion.Id] = champion
 	}
 
 	start := time.Now()
-	vroomVroom(championSet)
+	//vroomVroom(championSet)
 	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
