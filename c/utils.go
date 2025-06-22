@@ -71,11 +71,12 @@ func kbToMb(kb uint64) uint64 {
 	return kb / 1024
 }
 
-func PrintTree(node *ScoredTrieNode, maxDepth int) {
-	printTree(node, 0, maxDepth)
+func PrintTree(idToChampionName map[byte]Champion, node *ScoredTrieNode, maxDepth int) {
+	fmt.Println("T1 Pick Eval:", node.AverageEvaluation)
+	printTree(idToChampionName, node, maxDepth, 0)
 }
 
-func printTree(node *ScoredTrieNode, currentDepth int, maxDepth int) {
+func printTree(idToChampionName map[byte]Champion, node *ScoredTrieNode, maxDepth, currentDepth int) {
 	if node == nil || currentDepth > maxDepth {
 		return
 	}
@@ -85,14 +86,14 @@ func printTree(node *ScoredTrieNode, currentDepth int, maxDepth int) {
 		indent += "|  "
 	}
 
-	if node.ChampionName != "" {
-		fmt.Printf("%s%s %s: %.4f\n", indent, DraftOrder[currentDepth-1], node.ChampionName, node.AverageEvaluation)
+	for championId, childNode := range node.Children {
+		fmt.Printf("%s%s %s: %.4f\n", indent, DraftOrder[currentDepth], idToChampionName[championId].Name, childNode.AverageEvaluation)
 	}
 
 	sortedList := mapToSortedSlice(node.Children)
 
 	for _, childNode := range sortedList {
-		printTree(&childNode, currentDepth+1, maxDepth)
+		printTree(idToChampionName, &childNode, maxDepth, currentDepth+1)
 	}
 }
 

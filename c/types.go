@@ -9,7 +9,6 @@ type Champion struct {
 }
 
 type ScoredTrieNode struct {
-	ChampionName      string
 	AverageEvaluation float32
 	Children          map[byte]*ScoredTrieNode
 }
@@ -23,11 +22,11 @@ type TeamSelectableChampions struct {
 
 type Player struct {
 	Name         string
-	ChampionPool []bool
+	ChampionPool map[byte]int8 // Champion ID to Evaluation.
 }
 
 type Team struct {
-	Pick1Pool []bool
-	Pick2Pool []bool
-	Pick3Pool []bool
+	Pick1Pool []int8
+	Pick2Pool []int8
+	Pick3Pool []int8
 }

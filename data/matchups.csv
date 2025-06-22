@@ -8,7 +8,7 @@ Bakko,Ruh Kaan,0
 Bakko,Shifu,1
 Bakko,Thorn,0
 Bakko,Alysia,-1
-Bakko,Ashka,-1
+Bakko,Ashka,0
 Bakko,Destiny,-1
 Bakko,Ezmo,-1
 Bakko,Iva,0
@@ -225,12 +225,12 @@ Alysia,Sirius,1
 Alysia,Ulric,0
 Alysia,Zander,-1
 Ashka,Destiny,1
-Ashka,Ezmo,0
+Ashka,Ezmo,-1
 Ashka,Iva,1
 Ashka,Jade,-1
 Ashka,Jumong,0
 Ashka,Shen Rao,1
-Ashka,Taya,0
+Ashka,Taya,-2
 Ashka,Varesh,1
 Ashka,Blossom,0
 Ashka,Lucie,1
@@ -368,7 +368,7 @@ Pearl,Sirius,1
 Pearl,Ulric,2
 Pearl,Zander,-1
 Pestilus,Poloma,0
-Pestilus,Sirius,0
+Pestilus,Sirius,1
 Pestilus,Ulric,-1
 Pestilus,Zander,-1
 Poloma,Sirius,0

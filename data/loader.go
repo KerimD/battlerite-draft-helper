@@ -72,29 +72,32 @@ func FormatCsvData(championNameToId map[string]byte, filename string, isSynergy 
 
 func GetPlayerChampions(
 	championNameToId map[string]byte,
-	numChampions int,
 	p1Name string,
 	p2Name string,
 	p3Name string,
 ) (c.Player, c.Player, c.Player) {
-	fmt.Println(championNameToId)
 	playersChampionPoolData := [][][]string{
 		getCsvData(DataDir + PlayerDataDir + p1Name + ".csv"),
 		getCsvData(DataDir + PlayerDataDir + p2Name + ".csv"),
 		getCsvData(DataDir + PlayerDataDir + p3Name + ".csv"),
 	}
 
-	player1 := c.Player{Name: p1Name, ChampionPool: make([]bool, numChampions, numChampions)}
-	player2 := c.Player{Name: p2Name, ChampionPool: make([]bool, numChampions, numChampions)}
-	player3 := c.Player{Name: p3Name, ChampionPool: make([]bool, numChampions, numChampions)}
+	player1 := c.Player{Name: p1Name, ChampionPool: make(map[byte]int8, len(playersChampionPoolData[0])-1)}
+	player2 := c.Player{Name: p2Name, ChampionPool: make(map[byte]int8, len(playersChampionPoolData[1])-1)}
+	player3 := c.Player{Name: p3Name, ChampionPool: make(map[byte]int8, len(playersChampionPoolData[2])-1)}
 
 	for i, player := range []c.Player{player1, player2, player3} {
 		for j, row := range playersChampionPoolData[i] {
 			if j == 0 {
 				continue
 			}
+			// TODO: Remove when using full champions list
 			if id, exists := championNameToId[row[0]]; exists {
-				player.ChampionPool[id] = true
+				evaluation, err := strconv.ParseInt(row[1], 10, 8)
+				if err != nil {
+					log.Fatal(err)
+				}
+				player.ChampionPool[id] = int8(evaluation)
 			}
 		}
 	}

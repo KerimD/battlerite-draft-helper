@@ -13,7 +13,7 @@ import (
 const DataDir = "data/"
 
 var (
-	NumChampions     = 0
+	numChampions     int
 	ChampionNameToId = make(map[string]byte)
 	IdToChampion     = make(map[byte]c.Champion)
 	ChampionMatchups = make(map[byte]map[byte]int)
@@ -24,12 +24,13 @@ var (
 
 // Note: Currently does not support global bans after picks.
 func main() {
-	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
-	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
+	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
+	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
 	initializeGlobalVariables(champions)
 
-	player1, player2, player3 := data.GetPlayerChampions(ChampionNameToId, len(champions), "deniz", "vet", "bo4")
-	//populateTeamPickPoolsUsingPlayersChampionPools(&t1, player1, player2, player3)
+	//player1, player2, player3 := data.GetPlayerChampions(ChampionNameToId, "deniz", "vet", "bo4")
+	//populateTeamPickPoolsUsingPlayerChampionPools(&t1, player1, player2, player3)
+	//populateTeamPickPoolsUsingPlayerChampionPools(&t2, player1, player2, player3) // TODO: 3 new players.
 
 	championSet := make(map[byte]c.Champion, len(champions))
 	for _, champion := range champions {
@@ -37,12 +38,12 @@ func main() {
 	}
 
 	start := time.Now()
-	//vroomVroom(championSet)
+	vroomVroom(championSet)
 	defer fmt.Printf("Program completed in %v", time.Since(start))
 }
 
 func initializeGlobalVariables(champions []c.Champion) {
-	NumChampions = len(champions)
+	numChampions = len(champions)
 	for _, champion := range champions {
 		ChampionNameToId[champion.Name] = champion.Id
 		IdToChampion[champion.Id] = champion
@@ -51,39 +52,114 @@ func initializeGlobalVariables(champions []c.Champion) {
 	ChampionSynergys = data.FormatCsvData(ChampionNameToId, DataDir+data.SynergiesCsvFilename, true)
 }
 
+func populateTeamPickPoolsUsingPlayerChampionPools(
+	team *c.Team,
+	player1 c.Player,
+	player2 c.Player,
+	player3 c.Player,
+) {
+	team.Pick1Pool = make([]int8, numChampions)
+	team.Pick2Pool = make([]int8, numChampions*numChampions)
+	team.Pick3Pool = make([]int8, numChampions*numChampions*numChampions)
+
+	for _, player := range []c.Player{player1, player2, player3} {
+		populatePick1Pool(team, player)
+	}
+
+	for i, p1 := range []c.Player{player1, player2, player3} {
+		for j, p2 := range []c.Player{player1, player2, player3} {
+			if i == j {
+				continue
+			}
+			populatePick2Pool(team, p1.ChampionPool, p2.ChampionPool)
+		}
+	}
+
+	for i, p1 := range []c.Player{player1, player2, player3} {
+		for j, p2 := range []c.Player{player1, player2, player3} {
+			for k, p3 := range []c.Player{player1, player2, player3} {
+				if i == j || i == k || j == k {
+					continue
+				}
+				populatePick3Pool(team, p1.ChampionPool, p2.ChampionPool, p3.ChampionPool)
+			}
+		}
+	}
+}
+
+func populatePick1Pool(team *c.Team, player c.Player) {
+	for championId, evaluation := range player.ChampionPool {
+		if evaluation > team.Pick1Pool[championId] {
+			team.Pick1Pool[championId] = evaluation
+		}
+	}
+}
+
+func populatePick2Pool(team *c.Team, championPool1, championPool2 map[byte]int8) {
+	for champion1Id, evaluation1 := range championPool1 {
+		for champion2Id, evaluation2 := range championPool2 {
+			if champion1Id == champion2Id {
+				continue
+			}
+
+			evaluationSum := evaluation1 + evaluation2
+			index := int(champion1Id) + int(champion2Id)*numChampions
+			if evaluationSum > team.Pick2Pool[index] {
+				team.Pick2Pool[index] = evaluationSum
+			}
+		}
+	}
+}
+
+func populatePick3Pool(team *c.Team, championPool1, championPool2, championPool3 map[byte]int8) {
+	for champion1Id, evaluation1 := range championPool1 {
+		for champion2Id, evaluation2 := range championPool2 {
+			for champion3Id, evaluation3 := range championPool3 {
+				if champion1Id == champion2Id || champion1Id == champion3Id || champion2Id == champion3Id {
+					continue
+				}
+
+				evaluationSum := evaluation1 + evaluation2 + evaluation3
+				index := int(champion1Id) + int(champion2Id)*numChampions + int(champion3Id)*numChampions*numChampions
+				if evaluationSum > team.Pick3Pool[index] {
+					team.Pick3Pool[index] = evaluationSum
+				}
+			}
+		}
+	}
+}
+
 func vroomVroom(championSet map[byte]c.Champion) {
 	node := c.ScoredTrieNode{
-		ChampionName:      "",
 		AverageEvaluation: 0,
 		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
 
+	sumNumCompletedStates := 0
 	tempNumChampionsRan := 0
-	numCompletedStates := 0
 	evaluationSum := float32(0)
-	for championId, _ := range championSet {
-		if championId != 6 {
+	for championId := range championSet {
+		if championId != TestDraft[0] {
 			continue
 		}
 
 		tempNumChampionsRan += 1
 
-		evaluation, childNode, asdf := kickOffDraft(championSet, championId)
+		childNode, numCompletedStates := kickOffDraft(championSet, championId)
 
-		evaluationSum += evaluation
+		evaluationSum += childNode.AverageEvaluation
 		node.Children[championId] = childNode
-		numCompletedStates += asdf
+		sumNumCompletedStates += numCompletedStates
 		break
 	}
 
 	//node.AverageEvaluation = evaluationSum / float32(len(championSet))
 	node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
-	fmt.Println("numCompletedStates 6350400:", numCompletedStates)
-	fmt.Println("Team 1:", node.AverageEvaluation)
-	c.PrintTree(&node, 12)
+	fmt.Println("numCompletedStates:", sumNumCompletedStates)
+	c.PrintTree(IdToChampion, &node, 6)
 }
 
-func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float32, *c.ScoredTrieNode, int) {
+func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (*c.ScoredTrieNode, int) {
 	t1SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 	t2SelectableChampions := c.CreateTeamSelectableChampions(championSet)
 	numT1Picks, numT2Picks := 0, 0
@@ -110,7 +186,9 @@ func kickOffDraft(championSet map[byte]c.Champion, chosenChampionId byte) (float
 	)
 }
 
-var TestDraft = []byte{7, 8, 0, 0, 2, 2, 1, 1, 4, 4}
+// var TestDraft = []byte{7, 8, 0, 0, 2, 2, 1, 1, 4, 4}
+// /////////////////// b, b, b, b, p, p, p, p, b, b
+var TestDraft = []byte{3, 4, 24, 11, 1, 1}
 
 func process(
 	previousState []byte,
@@ -122,22 +200,21 @@ func process(
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
-) (float32, *c.ScoredTrieNode, int) {
-	fmt.Println("process()", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name)
+) (*c.ScoredTrieNode, int) {
+	start := time.Now()
+	//fmt.Println("process()", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name)
 	currentState := append(previousState, chosenChampionId)
 
 	// Base case
 	if draftStepIdx >= len(c.DraftOrder)-1 {
 		evaluation := float32(evaluateCompletedState(currentState))
 		leafNode := c.ScoredTrieNode{
-			ChampionName:      IdToChampion[chosenChampionId].Name,
 			AverageEvaluation: evaluation,
 		}
-		return evaluation, &leafNode, 1
+		return &leafNode, 1
 	}
 
 	node := c.ScoredTrieNode{
-		ChampionName:      IdToChampion[chosenChampionId].Name,
 		AverageEvaluation: 0,
 		Children:          make(map[byte]*c.ScoredTrieNode),
 	}
@@ -151,17 +228,17 @@ func process(
 		t1SelectableChampions,
 		t2SelectableChampions,
 	)
-	fmt.Println(c.DraftOrder[draftStepIdx+1], selectableChampions)
+	//fmt.Println(c.DraftOrder[draftStepIdx+1], selectableChampions)
 
-	tempNumChampionsRan := 0
-	numCompletedStates := 0
+	sumNumCompletedStates := 0
+	numChampionsRanWithCompletedStates := 0
 	evaluationSum := float32(0)
 	for _, championId := range selectableChampions {
 		if (draftStepIdx+1 < len(TestDraft)) && championId != TestDraft[draftStepIdx+1] {
 			continue
+		} else {
+			//fmt.Println("Forcing", c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name)
 		}
-
-		tempNumChampionsRan += 1
 
 		copyOfNumT1Picks := numT1Picks
 		copyOfNumT2Picks := numT2Picks
@@ -178,7 +255,7 @@ func process(
 			)
 		}
 
-		evaluation, childNode, asdf := process(
+		childNode, numCompletedStates := process(
 			currentState,
 			championId,
 			draftStepIdx+1,
@@ -190,44 +267,48 @@ func process(
 			t2SelectableChampions,
 		)
 
-		evaluationSum += evaluation
-		node.Children[championId] = childNode
-		numCompletedStates += asdf
+		if numCompletedStates != 0 {
+			numChampionsRanWithCompletedStates += 1
+			evaluationSum += childNode.AverageEvaluation
+			node.Children[championId] = childNode
+			sumNumCompletedStates += numCompletedStates
+		}
 
 		addChampionIdToSelectableChampionsInPlace(championId, affectedMaps)
 
-		if draftStepIdx+1 == 2 {
-			//fmt.Println(c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name)
-			//fmt.Println("inside for loop", c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name, "evaluation:", evaluation, "evaluationSum", evaluationSum)
-		}
-		if draftStepIdx+1 < 10 {
+		//if draftStepIdx+1 == 7 {
+		//	fmt.Println("inside for loop", c.DraftOrder[draftStepIdx+1], IdToChampion[championId].Name, "childNode.AverageEvaluation:", childNode.AverageEvaluation, "evaluationSum", evaluationSum)
+		//}
+		if draftStepIdx+1 < 3 {
 			//fmt.Println("evaluation:", evaluation)
 			//c.PrintMemUsage()
 			break
 		}
 	}
 
-	//if draftStepIdx+1 == 3 {
+	if sumNumCompletedStates != 0 {
+		node.AverageEvaluation = evaluationSum / float32(numChampionsRanWithCompletedStates)
+	}
+
+	//if draftStepIdx+1 == 7 {
 	//	fmt.Println(c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan, "evaluation", evaluationSum/float32(tempNumChampionsRan))
 	//}
+	if draftStepIdx+1 == 7 {
+		fmt.Printf("%s2 %s, Time: %v", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, time.Since(start))
+		fmt.Println(", eval:", node.AverageEvaluation, "num states:", sumNumCompletedStates)
+	}
+	if draftStepIdx+1 == 6 {
+		fmt.Printf("%s %s, Time: %v", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, time.Since(start))
+		fmt.Println(", eval:", node.AverageEvaluation, "num states:", sumNumCompletedStates)
+	}
 	//if draftStepIdx+1 == 2 {
 	//	fmt.Println(IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan)
 	//}
 	//if draftStepIdx+1 == 1 {
 	//	fmt.Println(IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan)
 	//}
-	// TODO: Remove when using longer champ list.
-	if len(selectableChampions) != 0 {
-		node.AverageEvaluation = evaluationSum / float32(tempNumChampionsRan)
-	}
-	//node.AverageEvaluation = evaluationSum / float32(len(selectableChampions))
-	//if draftStepIdx < 3 {
-	//	fmt.Printf("    -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
-	//}
-	//if draftStepIdx < 2 {
-	//	fmt.Printf("  -> %s %s: %f\n", c.DraftOrder[draftStepIdx], IdToChampion[chosenChampionId].Name, node.AverageEvaluation)
-	//}
-	return node.AverageEvaluation, &node, numCompletedStates
+
+	return &node, sumNumCompletedStates
 }
 
 // From T1's perspective.
