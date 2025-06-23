@@ -3,11 +3,10 @@ package main
 import (
 	"battlerite-draft-helper/c"
 	"battlerite-draft-helper/data"
+	"battlerite-draft-helper/prep"
 	"fmt"
-	"time"
-
-	//"fmt"
 	"log"
+	"time"
 )
 
 const DataDir = "data/"
@@ -26,11 +25,7 @@ var (
 func main() {
 	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
 	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
-	initializeGlobalVariables(champions)
-
-	//player1, player2, player3 := data.GetPlayerChampions(ChampionNameToId, "deniz", "vet", "bo4")
-	//populateTeamPickPoolsUsingPlayerChampionPools(&t1, player1, player2, player3)
-	//populateTeamPickPoolsUsingPlayerChampionPools(&t2, player1, player2, player3) // TODO: 3 new players.
+	numChampions, ChampionNameToId, IdToChampion, ChampionMatchups, ChampionSynergys, t1, t2 = prep.InitializeGlobalVariables(champions)
 
 	championSet := make(map[byte]c.Champion, len(champions))
 	for _, champion := range champions {
@@ -40,93 +35,6 @@ func main() {
 	start := time.Now()
 	vroomVroom(championSet)
 	defer fmt.Printf("Program completed in %v", time.Since(start))
-}
-
-func initializeGlobalVariables(champions []c.Champion) {
-	numChampions = len(champions)
-	for _, champion := range champions {
-		ChampionNameToId[champion.Name] = champion.Id
-		IdToChampion[champion.Id] = champion
-	}
-	ChampionMatchups = data.FormatCsvData(ChampionNameToId, DataDir+data.MatchupsCsvFilename, false)
-	ChampionSynergys = data.FormatCsvData(ChampionNameToId, DataDir+data.SynergiesCsvFilename, true)
-}
-
-func populateTeamPickPoolsUsingPlayerChampionPools(
-	team *c.Team,
-	player1 c.Player,
-	player2 c.Player,
-	player3 c.Player,
-) {
-	team.Pick1Pool = make([]int8, numChampions)
-	team.Pick2Pool = make([]int8, numChampions*numChampions)
-	team.Pick3Pool = make([]int8, numChampions*numChampions*numChampions)
-
-	for _, player := range []c.Player{player1, player2, player3} {
-		populatePick1Pool(team, player)
-	}
-
-	for i, p1 := range []c.Player{player1, player2, player3} {
-		for j, p2 := range []c.Player{player1, player2, player3} {
-			if i == j {
-				continue
-			}
-			populatePick2Pool(team, p1.ChampionPool, p2.ChampionPool)
-		}
-	}
-
-	for i, p1 := range []c.Player{player1, player2, player3} {
-		for j, p2 := range []c.Player{player1, player2, player3} {
-			for k, p3 := range []c.Player{player1, player2, player3} {
-				if i == j || i == k || j == k {
-					continue
-				}
-				populatePick3Pool(team, p1.ChampionPool, p2.ChampionPool, p3.ChampionPool)
-			}
-		}
-	}
-}
-
-func populatePick1Pool(team *c.Team, player c.Player) {
-	for championId, evaluation := range player.ChampionPool {
-		if evaluation > team.Pick1Pool[championId] {
-			team.Pick1Pool[championId] = evaluation
-		}
-	}
-}
-
-func populatePick2Pool(team *c.Team, championPool1, championPool2 map[byte]int8) {
-	for champion1Id, evaluation1 := range championPool1 {
-		for champion2Id, evaluation2 := range championPool2 {
-			if champion1Id == champion2Id {
-				continue
-			}
-
-			evaluationSum := evaluation1 + evaluation2
-			index := int(champion1Id) + int(champion2Id)*numChampions
-			if evaluationSum > team.Pick2Pool[index] {
-				team.Pick2Pool[index] = evaluationSum
-			}
-		}
-	}
-}
-
-func populatePick3Pool(team *c.Team, championPool1, championPool2, championPool3 map[byte]int8) {
-	for champion1Id, evaluation1 := range championPool1 {
-		for champion2Id, evaluation2 := range championPool2 {
-			for champion3Id, evaluation3 := range championPool3 {
-				if champion1Id == champion2Id || champion1Id == champion3Id || champion2Id == champion3Id {
-					continue
-				}
-
-				evaluationSum := evaluation1 + evaluation2 + evaluation3
-				index := int(champion1Id) + int(champion2Id)*numChampions + int(champion3Id)*numChampions*numChampions
-				if evaluationSum > team.Pick3Pool[index] {
-					team.Pick3Pool[index] = evaluationSum
-				}
-			}
-		}
-	}
 }
 
 func vroomVroom(championSet map[byte]c.Champion) {
@@ -215,8 +123,7 @@ func process(
 	}
 
 	node := c.ScoredTrieNode{
-		AverageEvaluation: 0,
-		Children:          make(map[byte]*c.ScoredTrieNode),
+		Children: make(map[byte]*c.ScoredTrieNode),
 	}
 
 	selectableChampions := getSelectableChampions(
