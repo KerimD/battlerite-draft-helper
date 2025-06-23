@@ -12,20 +12,19 @@ import (
 const DataDir = "data/"
 
 var (
-	numChampions     int
+	NumChampions     int
 	ChampionNameToId = make(map[string]byte)
 	IdToChampion     = make(map[byte]c.Champion)
-	ChampionMatchups = make(map[byte]map[byte]int)
-	ChampionSynergys = make(map[byte]map[byte]int)
-	t1               c.Team
-	t2               c.Team
+	ChampionMatchups []int8
+	T1               c.Team
+	T2               c.Team
 )
 
 // Note: Currently does not support global bans after picks.
 func main() {
 	//champions := data.GetChampionsFromCsv(DataDir + data.ChampionsShortListCsvFilename)
 	champions := data.GetChampionsFromCsv(DataDir + data.ChampionsCsvFilename)
-	numChampions, ChampionNameToId, IdToChampion, ChampionMatchups, ChampionSynergys, t1, t2 = prep.InitializeGlobalVariables(champions)
+	NumChampions, ChampionNameToId, IdToChampion, ChampionMatchups, T1, T2 = prep.InitializeGlobalVariables(champions)
 
 	championSet := make(map[byte]c.Champion, len(champions))
 	for _, champion := range champions {
@@ -219,37 +218,40 @@ func process(
 }
 
 // From T1's perspective.
-func evaluateCompletedState(completedState []byte) int {
-	evaluation := 0
-	t1Picks := []byte{
+func evaluateCompletedState(completedState []byte) int8 {
+	var evaluation int8 = 0
+	t1ChampionIds := []byte{
 		completedState[c.T1PIdxs[0]],
 		completedState[c.T1PIdxs[1]],
 		completedState[c.T1PIdxs[2]],
 	}
-	t2Picks := []byte{
+	t2ChampionIds := []byte{
 		completedState[c.T2PIdxs[0]],
 		completedState[c.T2PIdxs[1]],
 		completedState[c.T2PIdxs[2]],
 	}
 
-	for i, t1ChampionId := range t1Picks {
-		for _, t2ChampionId := range t2Picks {
-			matchup := ChampionMatchups[t1ChampionId][t2ChampionId]
-			evaluation += matchup
-		}
+	//for _, t1ChampionId := range t1ChampionIds {
+	//	for _, t2ChampionId := range t2ChampionIds {
+	//		matchup := ChampionMatchups[t1ChampionId][t2ChampionId]
+	//		evaluation += matchup
+	//	}
+	//
+	//	for _, t1ChampionId2 := range t1ChampionIds[i+1:] {
+	//		synergy := ChampionSynergys[t1ChampionId][t1ChampionId2]
+	//		evaluation += synergy
+	//	}
+	//}
 
-		for _, t1ChampionId2 := range t1Picks[i+1:] {
-			synergy := ChampionSynergys[t1ChampionId][t1ChampionId2]
-			evaluation += synergy
-		}
-	}
+	//for i, t2ChampionId := range t2Picks {
+	//	for _, t2ChampionId2 := range t2Picks[i+1:] {
+	//		synergy := ChampionSynergys[t2ChampionId][t2ChampionId2]
+	//		evaluation += (-1) * synergy
+	//	}
+	//}
 
-	for i, t2ChampionId := range t2Picks {
-		for _, t2ChampionId2 := range t2Picks[i+1:] {
-			synergy := ChampionSynergys[t2ChampionId][t2ChampionId2]
-			evaluation += (-1) * synergy
-		}
-	}
+	evaluation += T1.Pick3Pool[int(t1ChampionIds[0])+int(t1ChampionIds[1])*NumChampions+int(t1ChampionIds[2])*NumChampions*NumChampions]
+	evaluation -= T2.Pick3Pool[int(t2ChampionIds[0])+int(t2ChampionIds[1])*NumChampions+int(t2ChampionIds[2])*NumChampions*NumChampions]
 
 	//fmt.Println(completedState, "evaluation:", evaluation)
 	return evaluation

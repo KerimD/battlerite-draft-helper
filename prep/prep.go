@@ -11,16 +11,14 @@ func InitializeGlobalVariables(champions []c.Champion) (
 	int,
 	map[string]byte,
 	map[byte]c.Champion,
-	map[byte]map[byte]int,
-	map[byte]map[byte]int,
+	[]int8,
 	c.Team,
 	c.Team,
 ) {
-	numChampions := len(champions)
 	championNameToId := make(map[string]byte)
 	idToChampion := make(map[byte]c.Champion)
-	championMatchups := make(map[byte]map[byte]int)
-	championSynergys := make(map[byte]map[byte]int)
+	championMatchups := make(map[byte]map[byte]int8)
+	championSynergys := make(map[byte]map[byte]int8)
 
 	for _, champion := range champions {
 		championNameToId[champion.Name] = champion.Id
@@ -31,18 +29,22 @@ func InitializeGlobalVariables(champions []c.Champion) (
 	championSynergys = data.FormatCsvData(championNameToId, DataDir+data.SynergiesCsvFilename, true)
 
 	player1, player2, player3 := data.GetPlayerChampions(championNameToId, "deniz", "vet", "bo4")
-	team1 := populateTeamPickPoolsUsingPlayerChampionPools(numChampions, player1, player2, player3)
-	team2 := populateTeamPickPoolsUsingPlayerChampionPools(numChampions, player1, player2, player3) // TODO: 3 new players.
+	team1 := populateTeamPickPoolsUsingPlayerChampionPools(champions, championSynergys, player1, player2, player3)
+	team2 := populateTeamPickPoolsUsingPlayerChampionPools(champions, championSynergys, player1, player2, player3) // TODO: 3 new players.
 
-	return numChampions, championNameToId, idToChampion, championMatchups, championSynergys, team1, team2
+	flatChampionMatchups := createFlatChampionMatchups(champions, championMatchups)
+
+	return len(champions), championNameToId, idToChampion, flatChampionMatchups, team1, team2
 }
 
 func populateTeamPickPoolsUsingPlayerChampionPools(
-	numChampions int,
+	champions []c.Champion,
+	championSynergys map[byte]map[byte]int8,
 	player1 c.Player,
 	player2 c.Player,
 	player3 c.Player,
 ) c.Team {
+	numChampions := len(champions)
 	team := c.Team{
 		Pick1Pool: make([]int8, numChampions),
 		Pick2Pool: make([]int8, numChampions*numChampions),
@@ -72,6 +74,7 @@ func populateTeamPickPoolsUsingPlayerChampionPools(
 			}
 		}
 	}
+	addChampionSynergiesToPick3Pool(champions, championSynergys, &team)
 
 	return team
 }
@@ -100,7 +103,11 @@ func populatePick2Pool(numChampions int, team *c.Team, championPool1, championPo
 	}
 }
 
-func populatePick3Pool(numChampions int, team *c.Team, championPool1, championPool2, championPool3 map[byte]int8) {
+func populatePick3Pool(
+	numChampions int,
+	team *c.Team,
+	championPool1, championPool2, championPool3 map[byte]int8,
+) {
 	for champion1Id, evaluation1 := range championPool1 {
 		for champion2Id, evaluation2 := range championPool2 {
 			for champion3Id, evaluation3 := range championPool3 {
@@ -116,4 +123,40 @@ func populatePick3Pool(numChampions int, team *c.Team, championPool1, championPo
 			}
 		}
 	}
+}
+
+func addChampionSynergiesToPick3Pool(champions []c.Champion, championSynergys map[byte]map[byte]int8, team *c.Team) {
+	numChampions := len(champions)
+
+	for i, champion1 := range champions {
+		for j, champion2 := range champions {
+			for k, champion3 := range champions {
+				if i == j || i == k || j == k {
+					continue
+				}
+
+				index := int(champion1.Id) + int(champion2.Id)*numChampions + int(champion3.Id)*numChampions*numChampions
+				team.Pick3Pool[index] += evaluateTeamChampionSynergy(championSynergys, champion1.Id, champion2.Id, champion3.Id)
+			}
+		}
+	}
+}
+
+func evaluateTeamChampionSynergy(
+	championSynergys map[byte]map[byte]int8,
+	champion1Id, champion2Id, champion3Id byte,
+) int8 {
+	var evaluation int8 = 0
+
+	evaluation += championSynergys[champion1Id][champion2Id]
+	evaluation += championSynergys[champion1Id][champion3Id]
+	evaluation += championSynergys[champion2Id][champion3Id]
+
+	return evaluation
+}
+
+func createFlatChampionMatchups(champions []c.Champion, championMatchups map[byte]map[byte]int8) []int8 {
+	numChampions := len(champions)
+	flatChampionMatchups := make([]int8, numChampions*numChampions*numChampions*numChampions)
+	return flatChampionMatchups
 }

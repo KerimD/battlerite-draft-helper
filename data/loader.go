@@ -54,15 +54,15 @@ func GetChampionsFromCsv(filename string) []c.Champion {
 	return champions
 }
 
-func FormatCsvData(championNameToId map[string]byte, filename string, isSynergy bool) map[byte]map[byte]int {
+func FormatCsvData(championNameToId map[string]byte, filename string, isSynergy bool) map[byte]map[byte]int8 {
 	data := getCsvData(filename)
 	stringData := parseCsvData(data, isSynergy)
 
-	byteData := make(map[byte]map[byte]int)
+	byteData := make(map[byte]map[byte]int8)
 	for name, nameId := range championNameToId {
 		for opposition, oppositionId := range championNameToId {
 			if byteData[nameId] == nil {
-				byteData[nameId] = make(map[byte]int)
+				byteData[nameId] = make(map[byte]int8)
 			}
 			byteData[nameId][oppositionId] = stringData[name][opposition]
 		}
@@ -147,8 +147,8 @@ func migrateMatchupsCsvToJson() {
 	SaveDataToJsonFile(sortedMatchups, MatchupsJsonFilename)
 }
 
-func parseCsvData(data [][]string, isSynergy bool) map[string]map[string]int {
-	matchups := make(map[string]map[string]int)
+func parseCsvData(data [][]string, isSynergy bool) map[string]map[string]int8 {
+	matchups := make(map[string]map[string]int8)
 	for i, row := range data {
 		if i == 0 {
 			continue
@@ -158,13 +158,14 @@ func parseCsvData(data [][]string, isSynergy bool) map[string]map[string]int {
 	return matchups
 }
 
-func populateMatchups(row []string, matchups map[string]map[string]int, isSynergy bool) {
+func populateMatchups(row []string, matchups map[string]map[string]int8, isSynergy bool) {
 	name := row[0]
 	opposition := row[1]
-	evaluation, err := strconv.Atoi(row[2])
+	intEvaluation, err := strconv.Atoi(row[2])
 	if err != nil {
 		log.Fatal(err)
 	}
+	evaluation := int8(intEvaluation)
 
 	populateMatchup(matchups, name, opposition, evaluation)
 	if isSynergy {
@@ -174,23 +175,23 @@ func populateMatchups(row []string, matchups map[string]map[string]int, isSynerg
 	}
 }
 
-func populateMatchup(matchups map[string]map[string]int, name string, opposition string, evaluation int) {
+func populateMatchup(matchups map[string]map[string]int8, name string, opposition string, evaluation int8) {
 	_, exists := matchups[name]
 	if !exists {
-		matchups[name] = make(map[string]int)
+		matchups[name] = make(map[string]int8)
 		matchups[name][name] = 0
 	}
 	matchups[name][opposition] = evaluation
 }
 
 // no clue how this function works
-func sortMatchups(matchups map[string]map[string]int) map[string]json.RawMessage {
+func sortMatchups(matchups map[string]map[string]int8) map[string]json.RawMessage {
 	result := make(map[string]json.RawMessage)
 
 	for champion, opponents := range matchups {
 		type pair struct {
 			key   string
-			value int
+			value int8
 		}
 
 		var pairs []pair
