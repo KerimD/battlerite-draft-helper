@@ -158,5 +158,17 @@ func evaluateTeamChampionSynergy(
 func createFlatChampionMatchups(champions []c.Champion, championMatchups map[byte]map[byte]int8) []int8 {
 	numChampions := len(champions)
 	flatChampionMatchups := make([]int8, numChampions*numChampions*numChampions*numChampions)
+
+	for _, champion1 := range champions {
+		for _, champion2 := range champions {
+			for _, champion3 := range champions {
+				for _, champion4 := range champions {
+					index := int(champion1.Id) + int(champion2.Id)*numChampions + int(champion3.Id)*numChampions*numChampions + int(champion4.Id)*numChampions*numChampions*numChampions
+					flatChampionMatchups[index] = championMatchups[champion1.Id][champion2.Id] + championMatchups[champion1.Id][champion3.Id] + championMatchups[champion1.Id][champion4.Id]
+				}
+			}
+		}
+	}
+
 	return flatChampionMatchups
 }

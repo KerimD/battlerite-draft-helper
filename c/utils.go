@@ -29,17 +29,6 @@ func CreateTeamSelectableChampions(champions map[byte]Champion) TeamSelectableCh
 	return teamSelectableChampions
 }
 
-func DeepCopyTeamSelectableChampions(teamSelectableChampions TeamSelectableChampions) TeamSelectableChampions {
-	deepCopy := TeamSelectableChampionsConstructor()
-
-	deepCopy.PickableChampions = CopyMap(teamSelectableChampions.PickableChampions)
-	deepCopy.BannableChampions = CopyMap(teamSelectableChampions.BannableChampions)
-	deepCopy.PickableSupportChampions = CopyMap(teamSelectableChampions.PickableSupportChampions)
-	deepCopy.BannableSupportChampions = CopyMap(teamSelectableChampions.BannableSupportChampions)
-
-	return deepCopy
-}
-
 func TeamSelectableChampionsConstructor() TeamSelectableChampions {
 	return TeamSelectableChampions{
 		PickableChampions:        make(map[byte]bool),
