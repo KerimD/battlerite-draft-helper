@@ -147,6 +147,10 @@ func addChampionSynergiesToPick3Pool(champions []c.Champion, championSynergys ma
 				}
 
 				index := int(champion1.Id) + int(champion2.Id)*numChampions + int(champion3.Id)*numChampions*numChampions
+				if team.Pick3Pool[index] == -128 {
+					continue
+				}
+
 				team.Pick3Pool[index] += evaluateTeamChampionSynergy(championSynergys, champion1.Id, champion2.Id, champion3.Id)
 			}
 		}
