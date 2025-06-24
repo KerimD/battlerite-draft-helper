@@ -14,30 +14,6 @@ func CopyMap(original map[byte]bool) map[byte]bool {
 	return newMap
 }
 
-func CreateTeamSelectableChampions(champions map[byte]Champion) TeamSelectableChampions {
-	teamSelectableChampions := TeamSelectableChampionsConstructor()
-
-	for championId, champion := range champions {
-		teamSelectableChampions.PickableChampions[championId] = true
-		teamSelectableChampions.BannableChampions[championId] = true
-		if champion.Role == SupportRole {
-			teamSelectableChampions.PickableSupportChampions[championId] = true
-			teamSelectableChampions.BannableSupportChampions[championId] = true
-		}
-	}
-
-	return teamSelectableChampions
-}
-
-func TeamSelectableChampionsConstructor() TeamSelectableChampions {
-	return TeamSelectableChampions{
-		PickableChampions:        make(map[byte]bool),
-		BannableChampions:        make(map[byte]bool),
-		PickableSupportChampions: make(map[byte]bool),
-		BannableSupportChampions: make(map[byte]bool),
-	}
-}
-
 func PrintMemUsage() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)

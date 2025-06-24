@@ -58,7 +58,7 @@ Freya,Rook,1
 Freya,Ruh Kaan,1
 Freya,Shifu,2
 Freya,Thorn,1
-Freya,Alysia,0
+Freya,Alysia,-1
 Freya,Ashka,-1
 Freya,Destiny,-1
 Freya,Ezmo,0
@@ -67,7 +67,7 @@ Freya,Jade,-1
 Freya,Jumong,-1
 Freya,Shen Rao,1
 Freya,Taya,1
-Freya,Varesh,-2
+Freya,Varesh,-1
 Freya,Blossom,0
 Freya,Lucie,-1
 Freya,Oldur,1
@@ -207,13 +207,13 @@ Thorn,Sirius,1
 Thorn,Ulric,0
 Thorn,Zander,-2
 Alysia,Ashka,-1
-Alysia,Destiny,1
+Alysia,Destiny,0
 Alysia,Ezmo,0
 Alysia,Iva,0
 Alysia,Jade,0
 Alysia,Jumong,0
 Alysia,Shen Rao,-1
-Alysia,Taya,0
+Alysia,Taya,-1
 Alysia,Varesh,1
 Alysia,Blossom,-1
 Alysia,Lucie,-1
@@ -248,7 +248,7 @@ Destiny,Jumong,-1
 Destiny,Shen Rao,-1
 Destiny,Taya,0
 Destiny,Varesh,0
-Destiny,Blossom,0
+Destiny,Blossom,1
 Destiny,Lucie,-1
 Destiny,Oldur,0
 Destiny,Pearl,1

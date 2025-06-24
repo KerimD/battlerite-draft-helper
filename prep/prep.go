@@ -29,8 +29,9 @@ func InitializeGlobalVariables(champions []c.Champion) (
 	championSynergys = data.FormatCsvData(championNameToId, DataDir+data.SynergiesCsvFilename, true)
 
 	player1, player2, player3 := data.GetPlayerChampions(championNameToId, "deniz", "vet", "bo4")
+	player4, player5, player6 := data.GetPlayerChampions(championNameToId, "lepnix", "peasprout", "faris")
 	team1 := populateTeamPickPoolsUsingPlayerChampionPools(champions, championSynergys, player1, player2, player3)
-	team2 := populateTeamPickPoolsUsingPlayerChampionPools(champions, championSynergys, player1, player2, player3) // TODO: 3 new players.
+	team2 := populateTeamPickPoolsUsingPlayerChampionPools(champions, championSynergys, player4, player5, player6)
 
 	flatChampionMatchups := createFlatChampionMatchups(champions, championMatchups)
 
@@ -50,6 +51,10 @@ func populateTeamPickPoolsUsingPlayerChampionPools(
 		Pick2Pool: make([]int8, numChampions*numChampions),
 		Pick3Pool: make([]int8, numChampions*numChampions*numChampions),
 	}
+
+	fillSliceWithNilValues(team.Pick1Pool)
+	fillSliceWithNilValues(team.Pick2Pool)
+	fillSliceWithNilValues(team.Pick3Pool)
 
 	for _, player := range []c.Player{player1, player2, player3} {
 		populatePick1Pool(&team, player)
@@ -77,6 +82,12 @@ func populateTeamPickPoolsUsingPlayerChampionPools(
 	addChampionSynergiesToPick3Pool(champions, championSynergys, &team)
 
 	return team
+}
+
+func fillSliceWithNilValues(slice []int8) {
+	for i := range slice {
+		slice[i] = -128
+	}
 }
 
 func populatePick1Pool(team *c.Team, player c.Player) {
@@ -171,4 +182,46 @@ func createFlatChampionMatchups(champions []c.Champion, championMatchups map[byt
 	}
 
 	return flatChampionMatchups
+}
+
+func CreateTeamSelectableChampions(champions map[byte]c.Champion, t1PickPool, t2PickPool []int8) (
+	c.TeamSelectableChampions,
+	c.TeamSelectableChampions,
+) {
+	t1SelectableChampions := TeamSelectableChampionsConstructor()
+	t2SelectableChampions := TeamSelectableChampionsConstructor()
+
+	populateTeamSelectableChampions(champions, t1PickPool, t1SelectableChampions, t2SelectableChampions)
+	populateTeamSelectableChampions(champions, t2PickPool, t2SelectableChampions, t1SelectableChampions)
+
+	return t1SelectableChampions, t2SelectableChampions
+}
+
+func populateTeamSelectableChampions(
+	champions map[byte]c.Champion,
+	pickPool []int8,
+	t1SelectableChampions, t2SelectableChampions c.TeamSelectableChampions,
+) {
+	for championId, evaluation := range pickPool {
+		if evaluation == -128 {
+			continue
+		}
+
+		t1SelectableChampions.PickableChampions[byte(championId)] = true
+		t2SelectableChampions.BannableChampions[byte(championId)] = true
+
+		if champions[byte(championId)].Role == c.SupportRole {
+			t1SelectableChampions.PickableSupportChampions[byte(championId)] = true
+			t2SelectableChampions.BannableSupportChampions[byte(championId)] = true
+		}
+	}
+}
+
+func TeamSelectableChampionsConstructor() c.TeamSelectableChampions {
+	return c.TeamSelectableChampions{
+		PickableChampions:        make(map[byte]bool),
+		BannableChampions:        make(map[byte]bool),
+		PickableSupportChampions: make(map[byte]bool),
+		BannableSupportChampions: make(map[byte]bool),
+	}
 }
