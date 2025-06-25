@@ -48,6 +48,8 @@ func vroomVroom(championSet map[byte]c.Champion) {
 		0,
 		0,
 		0,
+		0,
+		0,
 		false,
 		false,
 		t1SelectableChampions,
@@ -67,6 +69,8 @@ func process(
 	draftStepIdx int,
 	numT1Picks int,
 	numT2Picks int,
+	numT1Supports int,
+	numT2Supports int,
 	t1HasSupport bool,
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
@@ -75,7 +79,7 @@ func process(
 
 	// Base case
 	if draftStepIdx >= len(c.DraftOrder) {
-		evaluation := float32(evaluateCompletedState(currentState))
+		evaluation := int16(evaluateCompletedState(currentState)) * 100
 		leafNode := c.ScoredTrieNode{
 			AverageEvaluation: evaluation,
 		}
@@ -91,8 +95,8 @@ func process(
 
 	selectableChampions := getSelectableChampions(
 		draftStepIdx,
-		numT1Picks,
-		numT2Picks,
+		&numT1Picks,
+		&numT2Picks,
 		t1HasSupport,
 		t2HasSupport,
 		t1SelectableChampions,
@@ -101,7 +105,7 @@ func process(
 
 	sumNumCompletedStates := 0
 	numChampionsRanWithCompletedStates := 0
-	evaluationSum := float32(0)
+	var evaluationSum int16 = 0
 	for _, championId := range selectableChampions {
 		// TODO: Remove.
 		if (draftStepIdx < len(TestDraft)) && championId != TestDraft[draftStepIdx] {
@@ -112,16 +116,11 @@ func process(
 			continue
 		}
 
-		copyOfNumT1Picks := numT1Picks
-		copyOfNumT2Picks := numT2Picks
-
 		var affectedMaps []*map[byte]bool
 		if draftStepIdx < len(c.DraftOrder)-1 {
 			affectedMaps = deleteChampionIdFromSelectableChampionsInPlace(
 				championId,
 				draftStepIdx,
-				&copyOfNumT1Picks,
-				&copyOfNumT2Picks,
 				t1SelectableChampions,
 				t2SelectableChampions,
 			)
@@ -131,8 +130,10 @@ func process(
 		childNode, numCompletedStates := process(
 			futureState,
 			draftStepIdx+1,
-			copyOfNumT1Picks,
-			copyOfNumT2Picks,
+			numT1Picks,
+			numT2Picks,
+			numT1Supports,
+			numT2Supports,
 			t1HasSupport || (c.DraftOrder[draftStepIdx] == "T1P" && IdToChampion[championId].Role == c.SupportRole),
 			t2HasSupport || (c.DraftOrder[draftStepIdx] == "T2P" && IdToChampion[championId].Role == c.SupportRole),
 			t1SelectableChampions,
@@ -159,7 +160,7 @@ func process(
 	}
 
 	if sumNumCompletedStates != 0 {
-		node.AverageEvaluation = evaluationSum / float32(numChampionsRanWithCompletedStates)
+		node.AverageEvaluation = evaluationSum / int16(numChampionsRanWithCompletedStates)
 	}
 
 	//if draftStepIdx == 7 {
@@ -171,11 +172,11 @@ func process(
 	//}
 	//if draftStepIdx == 6 {
 	//	fmt.Printf("%s %s, Time: %v", c.DraftOrder[draftStepIdx-1], IdToChampion[currentState[len(currentState)-1]].Name, time.Since(start))
-	//	fmt.Println(", eval:", node.AverageEvaluation, "num states:", sumNumCompletedStates)
+	//	fmt.Println(", eval:", float32(node.AverageEvaluation)/100, "num states:", sumNumCompletedStates)
 	//}
 	if draftStepIdx == 5 {
 		fmt.Printf("%s %s, Time: %v", c.DraftOrder[draftStepIdx-1], IdToChampion[currentState[len(currentState)-1]].Name, time.Since(start))
-		fmt.Println(", eval:", node.AverageEvaluation, "num states:", sumNumCompletedStates)
+		fmt.Println(", eval:", float32(node.AverageEvaluation)/100, "num states:", sumNumCompletedStates)
 	}
 	//if draftStepIdx == 2 {
 	//	fmt.Println(IdToChampion[chosenChampionId].Name, "evaluationSum:", evaluationSum, "tempNumChampionsRan:", tempNumChampionsRan)
@@ -214,19 +215,20 @@ func evaluateCompletedState(completedState []byte) int8 {
 
 func getSelectableChampions(
 	draftStepIdx int,
-	numT1Picks int,
-	numT2Picks int,
+	numT1Picks *int,
+	numT2Picks *int,
 	t1HasSupport bool,
 	t2HasSupport bool,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
 ) []byte {
 	var selectableChampions map[byte]bool
-	t1NeedsSupportThisStep := !t1HasSupport && numT1Picks >= 2
-	t2NeedsSupportThisStep := !t2HasSupport && numT2Picks >= 2
+	t1NeedsSupportThisStep := !t1HasSupport && *numT1Picks >= 2
+	t2NeedsSupportThisStep := !t2HasSupport && *numT2Picks >= 2
 
 	switch c.DraftOrder[draftStepIdx] {
 	case "T1P":
+		*numT1Picks += 1
 		if t1NeedsSupportThisStep {
 			selectableChampions = t1SelectableChampions.PickableSupportChampions
 			break
@@ -239,6 +241,7 @@ func getSelectableChampions(
 		}
 		selectableChampions = t1SelectableChampions.BannableChampions
 	case "T2P":
+		*numT2Picks += 1
 		if t2NeedsSupportThisStep {
 			selectableChampions = t2SelectableChampions.PickableSupportChampions
 			break
@@ -270,20 +273,20 @@ func wouldTeamRealisticallyMakeThisSelection(
 ) bool {
 	switch c.DraftOrder[draftStepIdx] {
 	case "T1P", "T2B":
-		if numT1Picks == 1 {
+		if numT1Picks == 2 {
 			index := int(currentState[c.T1PIdxs[0]]) + int(championId)*NumChampions
 			return T1.Pick2Pool[index] != -128
 		}
-		if numT1Picks == 2 {
+		if numT1Picks == 3 {
 			index := int(currentState[c.T1PIdxs[0]]) + int(currentState[c.T1PIdxs[1]])*NumChampions + int(championId)*NumChampions*NumChampions
 			return T1.Pick3Pool[index] != -128
 		}
 	case "T2P", "T1B":
-		if numT2Picks == 1 {
+		if numT2Picks == 2 {
 			index := int(currentState[c.T2PIdxs[0]]) + int(championId)*NumChampions
 			return T2.Pick2Pool[index] != -128
 		}
-		if numT2Picks == 2 {
+		if numT2Picks == 3 {
 			index := int(currentState[c.T2PIdxs[0]]) + int(currentState[c.T2PIdxs[1]])*NumChampions + int(championId)*NumChampions*NumChampions
 			return T2.Pick3Pool[index] != -128
 		}
@@ -295,8 +298,6 @@ func wouldTeamRealisticallyMakeThisSelection(
 func deleteChampionIdFromSelectableChampionsInPlace(
 	championId byte,
 	currDraftStepIdx int,
-	numT1Picks *int,
-	numT2Picks *int,
 	t1SelectableChampions c.TeamSelectableChampions,
 	t2SelectableChampions c.TeamSelectableChampions,
 ) []*map[byte]bool {
@@ -304,12 +305,10 @@ func deleteChampionIdFromSelectableChampionsInPlace(
 	case "T1GB", "T2GB":
 		return globalBan(championId, t1SelectableChampions, t2SelectableChampions)
 	case "T1P":
-		*numT1Picks += 1
 		return t1PickT2Ban(championId, t1SelectableChampions, t2SelectableChampions)
 	case "T1B":
 		return t1BanT2Pick(championId, t1SelectableChampions, t2SelectableChampions)
 	case "T2P":
-		*numT2Picks += 1
 		return t1BanT2Pick(championId, t1SelectableChampions, t2SelectableChampions)
 	case "T2B":
 		return t1PickT2Ban(championId, t1SelectableChampions, t2SelectableChampions)
